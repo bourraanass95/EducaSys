@@ -1,0 +1,150 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "identifiant": { "type": "string" },
+        "password": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["Admin", "Staff", "Teacher", "Student"] },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["identifiant", "password", "role"]
+    },
+    "Application": {
+      "title": "Application",
+      "description": "Student recruitment application",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string" },
+        "email": { "type": "string" },
+        "program": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "In Review", "Accepted", "Rejected"] },
+        "appliedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentName", "program", "status", "appliedAt"]
+    },
+    "StaffMember": {
+      "title": "Staff Member",
+      "description": "Teacher or administrative staff member",
+      "type": "object",
+      "properties": {
+        "identifiant": { "type": "string" },
+        "password": { "type": "string" },
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["name", "email", "type"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Financial record",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Paid", "Pending", "Overdue"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentName", "amount", "status"]
+    },
+    "Filiere": {
+      "title": "Filiere",
+      "description": "Academic program",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "description": { "type": "string" },
+        "coordinator": { "type": "string" },
+        "studentCount": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Structure": {
+      "title": "Structure",
+      "description": "Educational structure element (Room, Module, Year)",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Niveau", "Matière", "Salle"] },
+        "name": { "type": "string" }
+      },
+      "required": ["type", "name"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "Class session schedule",
+      "type": "object",
+      "properties": {
+        "day": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "name": { "type": "string" },
+        "teacher": { "type": "string" },
+        "room": { "type": "string" },
+        "group": { "type": "string" }
+      },
+      "required": ["day", "startTime", "endTime", "name", "group"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Student attendance record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "date": { "type": "string" },
+        "filiere": { "type": "string" },
+        "year": { "type": "string" },
+        "status": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["studentId", "date", "status"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "applications/{applicationId}": {
+      "schema": "Application",
+      "description": "Student applications"
+    },
+    "staff/{staffId}": {
+      "schema": "StaffMember",
+      "description": "Staff members"
+    },
+    "invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Financial invoices"
+    },
+    "filieres/{filiereId}": {
+      "schema": "Filiere",
+      "description": "Academic programs"
+    },
+    "structures/{structureId}": {
+      "schema": "Structure",
+      "description": "Educational structures"
+    },
+    "schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Class schedules"
+    },
+    "attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Attendance records"
+    },
+    "audit_logs/{logId}": {
+      "schema": { "type": "object", "properties": {} },
+      "description": "Activity logs"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "EducaSys SaaS",
+  "description": "Multi-tenant School Management System with isolated dashboards, automated attendance, and academic tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
