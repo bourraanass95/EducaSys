@@ -28,17 +28,11 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
   const [rooms, setRooms] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
 
-  const isTeacher = activeRole === 'Teacher';
-  const isStudent = activeRole === 'Student';
   const canManage = activeRole === 'Admin' || activeRole === 'Staff';
 
   useEffect(() => {
     loadData();
-    if (isStudent && user) {
-      setSelectedFiliere(user.program || '');
-      setSelectedYear(user.year?.toString() || '1');
-    }
-  }, [isStudent, user]);
+  }, [user]);
 
   const loadData = async () => {
     setLoading(true);
@@ -89,12 +83,13 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
       if (editingSchedule) {
         await api.updateGeneric('schedules', editingSchedule.id, scheduleForm);
       } else {
-        await api.addGeneric('schedules', scheduleForm);
+        await api.addGeneric('schedules', { ...scheduleForm, schoolId: user?.schoolId });
       }
       setIsModalOpen(false);
       loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert('Erreur: ' + err.message);
     }
   };
 
@@ -108,29 +103,23 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
     }
   };
 
-  const activeSchedules = isTeacher 
-    ? schedules.filter(s => s.teacher === user.name)
-    : (selectedFiliere === '' || selectedYear === '') 
+  const activeSchedules = (selectedFiliere === '' || selectedYear === '') 
       ? [] 
       : schedules.filter(s => s.group === selectedFiliere && s.year?.toString() === selectedYear);
 
-  const getOccupiedRooms = () => {
+  const getOccupiedRooms = React.useCallback(() => {
     const { day, startTime, endTime } = scheduleForm;
     if (!day || !startTime || !endTime) return [];
     
     return schedules
       .filter(s => {
-        // Exclude the current session being edited
         if (editingSchedule && s.id === editingSchedule.id) return false;
-        
-        // Match same day
         if (s.day !== day) return false;
-        
-        // Time overlap check: (StartA < EndB) and (EndA > StartB)
+        if (!s.startTime || !s.endTime) return false;
         return s.startTime < endTime && s.endTime > startTime;
       })
       .map(s => s.room);
-  };
+  }, [scheduleForm.day, scheduleForm.startTime, scheduleForm.endTime, schedules, editingSchedule]);
 
   const occupiedRooms = getOccupiedRooms();
 
@@ -138,11 +127,11 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
     if (scheduleForm.room && occupiedRooms.includes(scheduleForm.room)) {
       setScheduleForm(prev => ({ ...prev, room: '' }));
     }
-  }, [scheduleForm.day, scheduleForm.startTime, scheduleForm.endTime, occupiedRooms]);
+  }, [scheduleForm.day, scheduleForm.startTime, scheduleForm.endTime]); // Removed occupiedRooms to avoid circular dependency loop
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Emplois du temps</h1>
           <p className="text-gray-500">Planification hebdomadaire par programme/filière.</p>
@@ -150,47 +139,46 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
         {canManage && (
           <button 
             onClick={() => { setEditingSchedule(null); setScheduleForm({ day: 'Lundi', startTime: '08:00', endTime: '10:00', name: '', teacher: '', room: '', group: selectedFiliere || (filieres[0]?.name || ''), year: selectedYear }); setIsModalOpen(true); }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 font-sans uppercase text-[10px] tracking-widest"
+            className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase italic text-[10px] tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 w-full lg:w-auto"
           >
-            <Plus className="w-4 h-4" /> Nouvelle Séance
+            <Plus className="w-5 h-5" /> Nouvelle Séance
           </button>
         )}
       </div>
 
-      {(!isStudent && !isTeacher) && (
-        <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm w-full">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm w-full">
            <div className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase whitespace-nowrap">
-             <Filter className="w-4 h-4" />
-             Sélectionnez la classe:
+             <Filter className="w-4 h-4 text-blue-600" />
+             Classe:
            </div>
-           <select 
-             value={selectedFiliere}
-             onChange={e => setSelectedFiliere(e.target.value)}
-             className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-gray-700 flex-1 w-full"
-           >
-             <option value="" disabled>-- Choisir le programme --</option>
-             {filieres.map(f => (
-               <option key={f.id} value={f.name}>{f.name}</option>
-             ))}
-           </select>
-           <select 
-             value={selectedYear}
-             onChange={e => setSelectedYear(e.target.value)}
-             className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-gray-700 w-full sm:w-48"
-           >
-             <option value="1">1ère Année</option>
-             <option value="2">2ème Année</option>
-           </select>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+             <select 
+               value={selectedFiliere}
+               onChange={e => setSelectedFiliere(e.target.value)}
+               className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-gray-700 w-full"
+             >
+               <option value="" disabled>-- Choisir le programme --</option>
+               {filieres.map(f => (
+                 <option key={f.id} value={f.name}>{f.name}</option>
+               ))}
+             </select>
+             <select 
+               value={selectedYear}
+               onChange={e => setSelectedYear(e.target.value)}
+               className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-gray-700 w-full"
+             >
+               <option value="1">1ère Année</option>
+               <option value="2">2ème Année</option>
+             </select>
+           </div>
         </div>
-      )}
-
-      {(selectedFiliere || isTeacher) ? (
+      {selectedFiliere ? (
         <div className="bg-white border border-gray-100 rounded-[32px] shadow-xl overflow-hidden p-6 relative">
           <div className="absolute top-0 left-0 w-full h-32 bg-blue-50/50" />
           <div className="relative z-10">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-black text-gray-900 uppercase italic">
-                {isTeacher ? "Mon Emploi du temps" : `Emploi du temps : ${selectedFiliere}`}
+                Emploi du temps : {selectedFiliere}
               </h2>
             </div>
             
@@ -294,7 +282,7 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">{editingSchedule ? 'Modifier la séance' : 'Nouvelle Séance'}</h2>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-400" /></button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
               <form onSubmit={handleSaveSchedule} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">

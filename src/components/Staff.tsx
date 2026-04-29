@@ -14,7 +14,7 @@ import {
   Clock,
   MapPin
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, dedupeById } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserRole } from '../types';
 import { api, StaffMember } from '../services/api';
@@ -56,7 +56,7 @@ export const Staff = ({ activeRole, user }: StaffProps) => {
       const data = await api.getStaff(user?.schoolId);
       const teacherRoles = ['Enseignant (Teacher)', 'Teacher', 'Professeur', 'Enseignant', 'Maître de Conférences', 'Intervenant'];
       const filtered = data.filter(s => !teacherRoles.includes(s.subject));
-      setStaff(filtered);
+      setStaff(dedupeById(filtered));
     } catch (error) {
       console.error('Error loading staff:', error);
     } finally {

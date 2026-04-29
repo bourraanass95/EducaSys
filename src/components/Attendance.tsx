@@ -10,7 +10,8 @@ import {
   Download,
   FileText,
   BarChartHorizontal,
-  X
+  X,
+  Users
 } from 'lucide-react';
 import { cn, dedupeById } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -32,31 +33,28 @@ interface AttendanceProps {
 export const Attendance = ({ activeRole, user }: AttendanceProps) => {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [allModules, setAllModules] = useState<any[]>([]);
   const [selectedFiliere, setSelectedFiliere] = useState('');
   const [selectedYear, setSelectedYear] = useState('1');
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+  const [selectedModuleId, setSelectedModuleId] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceData, setAttendanceData] = useState<Record<string, { status: string; note: string }>>({});
   const [completeAttendanceLog, setCompleteAttendanceLog] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'input' | 'reports'>('input');
-  const [reportModal, setReportModal] = useState<{isOpen: boolean, type: 'all' | 'student', student?: any, startDate: string, endDate: string}>({isOpen: false, type: 'all', startDate: '', endDate: ''});
+  const [activeTab, setActiveTab] = useState<'input' | 'reports' | 'teacher-reports'>('input');
+  const [reportModal, setReportModal] = useState<{isOpen: boolean, type: 'all' | 'student' | 'teacher', student?: any, teacherId?: string, moduleId?: string, startDate: string, endDate: string}>({isOpen: false, type: 'all', startDate: '', endDate: ''});
   const [reportDates, setReportDates] = useState({ start: '', end: '' });
   
   const [filieres, setFilieres] = useState<any[]>([]);
 
-  const isTeacher = activeRole === 'Teacher';
-  const isStudent = activeRole === 'Student';
   const canMarkAttendance = activeRole === 'Admin' || activeRole === 'Staff';
-  const isViewOnly = isStudent;
+  const isViewOnly = false;
 
   useEffect(() => {
-    loadFilieres();
-    if (isStudent && user) {
-      setSelectedFiliere(user.program || '');
-      setSelectedYear(user.year?.toString() || '1');
-      setActiveTab('reports'); 
-    }
-  }, [isStudent, user]);
+    loadInitialData();
+  }, [user]);
 
   useEffect(() => {
     if (selectedFiliere && selectedYear) {
@@ -68,10 +66,23 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
     }
   }, [selectedFiliere, selectedYear, selectedDate]);
 
-  const loadFilieres = async () => {
+  const loadInitialData = async () => {
     try {
-      const allFilieres = await api.getFilieres(user?.schoolId);
+      const schoolId = user?.schoolId;
+      const [allFilieres, allStaff, modules] = await Promise.all([
+        api.getFilieres(schoolId),
+        api.getStaff(schoolId),
+        api.getGenericCollection('structures', schoolId)
+      ]);
       setFilieres(allFilieres);
+      setTeachers(allStaff.filter(s => s.subject.toLowerCase().includes('enseignant') || s.subject.toLowerCase().includes('teacher')));
+      setAllModules(modules.filter(m => m.type === 'Matière'));
+      
+      // Auto-select current user if they are a teacher
+      if (activeRole === 'Staff' && user) {
+        const matchingStaff = allStaff.find(s => s.email === user.email || s.identifiant === user.identifiant);
+        if (matchingStaff) setSelectedTeacherId(matchingStaff.id);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -80,13 +91,9 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
   const loadStudents = async () => {
     setLoading(true);
     try {
-      if (isStudent) {
-         setStudents([user]);
-      } else {
-        const data = await api.getStudents(user?.schoolId);
-        const filtered = data.filter((s:any) => s.status === 'Active' && s.program === selectedFiliere && s.year?.toString() === selectedYear);
-        setStudents(dedupeById(filtered));
-      }
+      const data = await api.getStudents(user?.schoolId);
+      const filtered = data.filter((s:any) => s.status === 'Active' && s.program === selectedFiliere && s.year?.toString() === selectedYear);
+      setStudents(dedupeById(filtered));
     } catch (error) {
       console.error('Error loading students for attendance:', error);
     } finally {
@@ -154,6 +161,9 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
           date: selectedDate,
           filiere: selectedFiliere,
           year: selectedYear,
+          teacherId: selectedTeacherId,
+          moduleId: selectedModuleId,
+          moduleName: allModules.find(m => m.id === selectedModuleId)?.name || '',
           status: record.status,
           note: record.note,
           schoolId: user?.schoolId
@@ -255,66 +265,162 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
     doc.save(`Assiduite_${student.name}.pdf`);
   };
 
+  const exportTeacherReport = (teacherId: string, moduleId?: string, startDate?: string, endDate?: string) => {
+    const teacher = teachers.find(t => t.id === teacherId);
+    if (!teacher) return;
+
+    const doc = new jsPDF() as any;
+    doc.setFontSize(22);
+    doc.setTextColor(79, 70, 229);
+    doc.text("Rapport d'Assiduité par Enseignant", 20, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Enseignant: ${teacher.name}`, 20, 30);
+    if (moduleId) {
+      const module = allModules.find(m => m.id === moduleId);
+      doc.text(`Matière: ${module?.name}`, 20, 36);
+    }
+    doc.text(`Periode: ${startDate || 'Tout'} - ${endDate || 'Tout'}`, 20, 42);
+    doc.text(`Généré le: ${new Date().toLocaleDateString()}`, 20, 48);
+    
+    const teacherLogs = completeAttendanceLog.filter(log => 
+       log.teacherId === teacherId && 
+       (!moduleId || log.moduleId === moduleId) &&
+       (!startDate || log.date >= startDate) && 
+       (!endDate || log.date <= endDate)
+    );
+
+    const tableColumn = ["Date", "Module", "Filière", "Présents", "Absents", "Taux %"];
+    const tableRows: any[] = [];
+    
+    // Group logs by date and module
+    const grouped: Record<string, any> = {};
+    teacherLogs.forEach(log => {
+      const key = `${log.date}_${log.moduleId || 'none'}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          date: log.date,
+          module: log.moduleName || 'N/A',
+          filiere: log.filiere,
+          present: 0,
+          absent: 0,
+          total: 0
+        };
+      }
+      grouped[key].total++;
+      if (log.status === 'Present') grouped[key].present++;
+      else grouped[key].absent++;
+    });
+
+    Object.values(grouped).sort((a:any, b:any) => b.date.localeCompare(a.date)).forEach((g: any) => {
+      const rate = g.total > 0 ? Math.round((g.present / g.total) * 100) : 0;
+      tableRows.push([g.date, g.module, g.filiere, g.present, g.absent, `${rate}%`]);
+    });
+
+    autoTable(doc, { startY: 55, head: [tableColumn], body: tableRows });
+    doc.save(`Rapport_Enseignant_${teacher.name.replace(/\s+/g, '_')}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Suivi d'Assiduité (3S)</h1>
           <p className="text-gray-500">Contrôle des présences en temps réel et alertes d'absentéisme.</p>
         </div>
         {!isViewOnly && (
-          <div className="flex gap-2">
-            <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-full sm:w-auto">
                <button 
                   onClick={() => setActiveTab('input')}
-                  className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2", activeTab === 'input' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50")}
+                  className={cn("flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2", activeTab === 'input' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50")}
                >
                   <UserCheck className="w-4 h-4" /> Saisie
                </button>
                <button 
                   onClick={() => setActiveTab('reports')}
-                  className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2", activeTab === 'reports' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50")}
+                  className={cn("flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 justify-center", activeTab === 'reports' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50")}
                >
                   <BarChartHorizontal className="w-4 h-4" /> Rapports
                </button>
+               {activeRole === 'Admin' && (
+                 <button 
+                    onClick={() => setActiveTab('teacher-reports')}
+                    className={cn("flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 justify-center", activeTab === 'teacher-reports' ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" : "text-gray-500 hover:bg-gray-50")}
+                 >
+                    <BookOpen className="w-4 h-4" /> Rapports Enseignants
+                 </button>
+               )}
             </div>
-            {activeTab === 'input' && (
-              <>
-                <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 text-gray-700 rounded-xl font-medium shadow-sm transition-all ml-4">
-                  <Calendar className="w-4 h-4 text-blue-600" />
-                  <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent border-none outline-none text-xs font-bold" />
-                </div>
-                {canMarkAttendance && selectedFiliere && (
-                  <button onClick={handleMarkAllPresent} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
-                    <UserCheck className="w-4 h-4" /> Marquer Tout Présent
-                  </button>
-                )}
-              </>
-            )}
-            {activeTab === 'reports' && selectedFiliere && (
-               <button onClick={() => setReportModal({isOpen: true, type: 'all', startDate: '', endDate: ''})} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-all shadow-lg shadow-green-100 ml-4 lg:ml-0">
-                  <Download className="w-4 h-4" /> Télécharger Rapport Global
-               </button>
-            )}
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {activeTab === 'input' && (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 text-gray-700 rounded-xl font-medium shadow-sm transition-all">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent border-none outline-none text-xs font-bold w-full" />
+                  </div>
+                  {canMarkAttendance && selectedFiliere && (
+                    <button onClick={handleMarkAllPresent} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 whitespace-nowrap">
+                      <UserCheck className="w-4 h-4" /> Tout Présent
+                    </button>
+                  )}
+                </>
+              )}
+              {activeTab === 'reports' && selectedFiliere && (
+                 <button onClick={() => setReportModal({isOpen: true, type: 'all', startDate: '', endDate: ''})} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-all shadow-lg shadow-green-100 whitespace-nowrap">
+                    <Download className="w-4 h-4" /> Rapport Global
+                 </button>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {!isStudent && (
-        <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm w-full">
-           <div className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase whitespace-nowrap">
-             <Calendar className="w-4 h-4 text-blue-600" /> Sélectionnez la classe:
-           </div>
-           <select value={selectedFiliere} onChange={e => setSelectedFiliere(e.target.value)} className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-gray-700 flex-1 w-full">
-             <option value="">-- Choisir le programme --</option>
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm w-full">
+         <div className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase whitespace-nowrap">
+           <Calendar className="w-4 h-4 text-blue-600" /> Filtres:
+         </div>
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
+           <select value={selectedFiliere} onChange={e => setSelectedFiliere(e.target.value)} className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-xs text-gray-700 w-full transition-all">
+             <option value="">-- Programme --</option>
              {filieres.map((f) => <option key={f.id} value={f.name}>{f.name}</option>)}
            </select>
-           <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-gray-700 w-full sm:w-48">
+           <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-xs text-gray-700 w-full transition-all">
              <option value="1">1ère Année</option>
              <option value="2">2ème Année</option>
            </select>
-        </div>
-      )}
+           
+           <select 
+            value={selectedTeacherId} 
+            onChange={e => setSelectedTeacherId(e.target.value)} 
+            disabled={activeRole === 'Staff'}
+            className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-xs text-gray-700 w-full transition-all disabled:opacity-50"
+           >
+             <option value="">-- Enseignant --</option>
+             {teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+           </select>
+
+           <select 
+            value={selectedModuleId} 
+            onChange={e => setSelectedModuleId(e.target.value)} 
+            className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-blue-500 bg-gray-50 font-bold text-xs text-gray-700 w-full transition-all"
+           >
+             <option value="">-- Matière --</option>
+             {allModules.filter(m => {
+                const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
+                if (selectedTeacher && Array.isArray(selectedTeacher.moduleIds) && selectedTeacher.moduleIds.length > 0) {
+                   if (!selectedTeacher.moduleIds.includes(m.id)) return false;
+                }
+                
+                const filiere = filieres.find(f => f.name === selectedFiliere);
+                if (!filiere) return true;
+                return (Array.isArray(m.filiereIds) && m.filiereIds.includes(filiere.id)) || m.filiereId === filiere.id || !m.filiereId;
+             }).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+           </select>
+         </div>
+      </div>
 
       {!selectedFiliere ? (
         <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[32px] p-20 flex flex-col items-center justify-center text-gray-400">
@@ -326,7 +432,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
         <>
           {activeTab === 'input' ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cible</span>
                   <span className="text-sm font-bold text-gray-900">{students.length} Étudiants</span>
@@ -371,10 +477,10 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className={cn("flex items-center justify-center gap-1 p-1 bg-gray-50 rounded-xl w-fit mx-auto shadow-inner border border-gray-100", isViewOnly && "pointer-events-none opacity-80")}>
-                                <button onClick={() => handleStatusChange(student.id, 'Present')} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5", record.status === 'Present' ? "bg-green-500 text-white shadow-md" : "text-gray-400 hover:text-green-500 hover:bg-white")}><CheckCircle2 className="w-3 h-3" /> PRÉSENT</button>
-                                <button onClick={() => handleStatusChange(student.id, 'Absent')} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5", record.status === 'Absent' ? "bg-red-500 text-white shadow-md" : "text-gray-400 hover:text-red-500 hover:bg-white")}><XCircle className="w-3 h-3" /> ABSENT</button>
-                                <button onClick={() => handleStatusChange(student.id, 'Late')} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5", record.status === 'Late' ? "bg-yellow-500 text-white shadow-md" : "text-gray-400 hover:text-yellow-600 hover:bg-white")}><Clock className="w-3 h-3" /> RETARD</button>
+                              <div className={cn("flex flex-wrap items-center justify-center gap-1.5 p-1.5 bg-gray-50 rounded-2xl w-full sm:w-fit mx-auto shadow-inner border border-gray-100", isViewOnly && "pointer-events-none opacity-80")}>
+                                <button onClick={() => handleStatusChange(student.id, 'Present')} className={cn("flex-1 sm:flex-none px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1.5", record.status === 'Present' ? "bg-green-500 text-white shadow-md" : "text-gray-400 hover:text-green-500 hover:bg-white")}><CheckCircle2 className="w-3.5 h-3.5" /> PRÉSENT</button>
+                                <button onClick={() => handleStatusChange(student.id, 'Absent')} className={cn("flex-1 sm:flex-none px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1.5", record.status === 'Absent' ? "bg-red-500 text-white shadow-md" : "text-gray-400 hover:text-red-500 hover:bg-white")}><XCircle className="w-3.5 h-3.5" /> ABSENT</button>
+                                <button onClick={() => handleStatusChange(student.id, 'Late')} className={cn("flex-1 sm:flex-none px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1.5", record.status === 'Late' ? "bg-yellow-500 text-white shadow-md" : "text-gray-400 hover:text-yellow-600 hover:bg-white")}><Clock className="w-3.5 h-3.5" /> RETARD</button>
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -396,9 +502,9 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
                 )}
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'reports' ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                  {[
                    { label: 'Présence Moyenne', value: `${(completeAttendanceLog.filter(l => l.status === 'Present').length / (completeAttendanceLog.length || 1) * 100).toFixed(1)}%`, color: 'blue' },
                    { label: 'Total Absences', value: completeAttendanceLog.filter(l => l.status === 'Absent').length, color: 'red' },
@@ -467,6 +573,83 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
                      })}
                    </tbody>
                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-gray-900 italic uppercase">Analyse par Enseignant</h3>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Générez des rapports basés sur l'activité des enseignants</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mb-6">
+                   <select 
+                     value={selectedTeacherId} 
+                     onChange={(e) => { 
+                       setSelectedTeacherId(e.target.value);
+                       setSelectedModuleId('');
+                     }}
+                     className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 font-bold text-xs text-gray-700 w-full md:w-64 transition-all"
+                   >
+                     <option value="">Tous les enseignants</option>
+                     {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                   </select>
+
+                   {selectedTeacherId && (
+                     <select 
+                       value={selectedModuleId} 
+                       onChange={(e) => setSelectedModuleId(e.target.value)}
+                       className="px-4 py-2 border-2 border-gray-100 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 font-bold text-xs text-gray-700 w-full md:w-64 transition-all"
+                     >
+                       <option value="">Toutes les matières</option>
+                       {allModules.filter(m => (teachers.find(t => t.id === selectedTeacherId)?.moduleIds || []).includes(m.id)).map(m => (
+                         <option key={m.id} value={m.id}>{m.name}</option>
+                       ))}
+                     </select>
+                   )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {teachers
+                   .filter(t => !selectedTeacherId || t.id === selectedTeacherId)
+                   .map(teacher => {
+                    const teacherLogs = completeAttendanceLog.filter(l => 
+                      l.teacherId === teacher.id && 
+                      (!selectedModuleId || l.moduleId === selectedModuleId)
+                    );
+                    const sessionCount = new Set(teacherLogs.map(l => `${l.date}_${l.moduleId}`)).size;
+                    
+                    return (
+                      <div key={teacher.id} className="p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-indigo-100 transition-all group">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                            {teacher.name.charAt(0)}
+                          </div>
+                          <span className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                            {sessionCount} Sessions
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-gray-900 mb-1">{teacher.name}</h4>
+                        <p className="text-xs text-gray-400 font-medium mb-6">{teacher.subject}</p>
+                        
+                        <div className="flex flex-col gap-2">
+                          <button 
+                            onClick={() => exportTeacherReport(teacher.id, selectedModuleId)}
+                            className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-xl text-[10px] font-black uppercase italic hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                          >
+                            <Download className="w-4 h-4" /> Rapport {selectedModuleId ? 'Matière' : 'Global'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -544,7 +727,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
             
             <div className="mt-8 bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden group">
                <div className="relative z-10">
-                  <p className="font-black italic uppercase text-lg mb-3 tracking-tighter">Nexus Analytics AI Summary</p>
+                  <p className="font-black italic uppercase text-lg mb-3 tracking-tighter">Nexus Analytics Summary</p>
                   <p className="opacity-90 leading-relaxed text-sm font-medium">
                     {students.length > 0 ? (
                       `L'assiduité moyenne de la classe est de ${

@@ -80,7 +80,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
   
   // Disable caching for API responses to prevent stale data
   app.use('/api', (req, res, next) => {
@@ -149,7 +149,8 @@ async function startServer() {
             id: docUser.id, 
             ...userData, 
             role,
-            isSuperAdmin
+            isSuperAdmin,
+            collection: 'users'
           } 
         });
       }
@@ -180,7 +181,8 @@ async function startServer() {
           user: { 
             id: docStaff.id, 
             ...staffData, 
-            role
+            role,
+            collection: 'staff'
           } 
         });
       }
@@ -298,19 +300,22 @@ async function startServer() {
   app.put('/api/:collection/:id', async (req, res) => {
     try {
       const dRef = doc(db, req.params.collection, req.params.id);
-      await updateDoc(dRef, { ...req.body, updatedAt: new Date().toISOString() });
+      await setDoc(dRef, { ...req.body, updatedAt: new Date().toISOString() }, { merge: true });
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
+      console.error('PUT error:', error);
       res.status(500).json({ error: 'Failed to update' });
     }
   });
 
   app.patch('/api/:collection/:id', async (req, res) => {
     try {
+      console.log('PATCH request:', req.params.collection, req.params.id, Object.keys(req.body));
       const dRef = doc(db, req.params.collection, req.params.id);
-      await updateDoc(dRef, { ...req.body, updatedAt: new Date().toISOString() });
+      await setDoc(dRef, { ...req.body, updatedAt: new Date().toISOString() }, { merge: true });
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
+      console.error('PATCH error:', error);
       res.status(500).json({ error: 'Failed to patch' });
     }
   });

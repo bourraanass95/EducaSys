@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2, AlertCircle, Info, ShieldAlert } from 'lucide-react';
 import { api } from '../services/api';
+import { cn, dedupeById } from '../lib/utils';
 import { UserRole } from '../types';
 
 export const NotificationsMenu = ({ activeRole, user }: { activeRole: UserRole, user?: any }) => {
@@ -16,7 +17,7 @@ export const NotificationsMenu = ({ activeRole, user }: { activeRole: UserRole, 
         n.targetRoles && n.targetRoles.includes(activeRole)
       );
       
-      setNotifications(roleNotifs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      setNotifications(dedupeById(roleNotifs).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     } catch (e) {
       console.error(e);
     }

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Search, Filter, Download, Mail, MapPin, Phone, BookOpen, Trophy,
-  MoreVertical, Plus, Trash2, Edit2, X, AlertOctagon
+  MoreVertical, Plus, Trash2, Edit2, X, AlertOctagon, FileUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, dedupeById } from '../lib/utils';
 import { UserRole } from '../types';
 import { api } from '../services/api';
+import Papa from 'papaparse';
 
 interface StudentsProps {
   activeRole: UserRole;
@@ -21,6 +22,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFiliere, setSelectedFiliere] = useState('Tous');
   const [selectedStatus, setSelectedStatus] = useState('Tous');
+  const [selectedYear, setSelectedYear] = useState('Tous');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
@@ -29,10 +31,11 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
   const [studentToDelete, setStudentToDelete] = useState<any | null>(null);
   
   const [isSaving, setIsSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     identifiant: '', 
-    password: '', 
     name: '', 
     imageUrl: '',
     dateOfBirth: '',
@@ -114,7 +117,6 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
   const resetForm = () => {
     setFormData({ 
       identifiant: '', 
-      password: '', 
       name: '', 
       imageUrl: '',
       dateOfBirth: '',
@@ -143,7 +145,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
     if (student) {
       setEditingStudent(student);
       setFormData({
-        identifiant: student.identifiant || '', password: student.password || '', name: student.name || '',
+        identifiant: student.identifiant || '', name: student.name || '',
         imageUrl: student.imageUrl || '',
         dateOfBirth: student.dateOfBirth || '', placeOfBirth: student.placeOfBirth || '', gender: student.gender || 'M',
         nationality: student.nationality || '', cinOrPassport: student.cinOrPassport || '', address: student.address || '',
@@ -190,6 +192,112 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
     }
   };
 
+  const handleExportCSV = () => {
+    const dataToExport = filteredStudents.map(s => ({
+      ID: s.identifiant,
+      Nom: s.name,
+      Email: s.email,
+      Phone: s.phone,
+      WhatsApp: s.whatsappPhone,
+      Programme: s.program,
+      Annee: s.year,
+      Statut: s.status,
+      DateNaissance: s.dateOfBirth,
+      LieuNaissance: s.placeOfBirth,
+      Nationalite: s.nationality,
+      CIN_Passport: s.cinOrPassport,
+      Adresse: s.address,
+      Parent: s.parentName,
+      ParentPhone: s.parentPhone,
+      DernierDiplome: s.lastDegree,
+      ScolariteTotale: s.totalTuition,
+      AnneeInscription: s.registrationYear
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `etudiants_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const importedData = results.data as any[];
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const row of importedData) {
+            try {
+              const identifiant = row.ID || row.identifiant || '';
+              
+              // Check for duplicates
+              const exists = students.some(s => s.identifiant === identifiant);
+              if (exists) {
+                errorCount++; // Treat as "skipped" but count in errors for summary if preferred, or use a separate skipCount
+                continue;
+              }
+
+              const payload = {
+                identifiant: identifiant,
+                name: row.Nom || row.name || '',
+                email: row.Email || row.email || '',
+                phone: row.Phone || row.phone || '',
+                whatsappPhone: row.WhatsApp || row.whatsappPhone || '',
+                program: row.Programme || row.program || (filieres.length > 0 ? filieres[0].name : 'MIAGE'),
+                year: parseInt(row.Annee || row.year || '1'),
+                status: row.Statut || row.status || 'Active',
+                dateOfBirth: row.DateNaissance || row.dateOfBirth || '',
+                placeOfBirth: row.LieuNaissance || row.placeOfBirth || '',
+                nationality: row.Nationalite || row.nationality || '',
+                cinOrPassport: row.CIN_Passport || row.cinOrPassport || '',
+                address: row.Adresse || row.address || '',
+                parentName: row.Parent || row.parentName || '',
+                parentPhone: row.ParentPhone || row.parentPhone || '',
+                lastDegree: row.DernierDiplome || row.lastDegree || '',
+                totalTuition: parseFloat(row.ScolariteTotale || row.totalTuition || '0'),
+                registrationYear: row.AnneeInscription || row.registrationYear || new Date().getFullYear().toString(),
+              };
+
+              if (payload.name && payload.identifiant) {
+                await api.addStudent(payload, user?.schoolId);
+                successCount++;
+              }
+            } catch (err) {
+              errorCount++;
+            }
+          }
+
+          setSuccessMessage(`${successCount} étudiants importés avec succès. ${errorCount} erreurs.`);
+          loadStudents();
+          setTimeout(() => setSuccessMessage(null), 5000);
+        } catch (error) {
+          alert("Erreur lors de l'importation du fichier CSV");
+        } finally {
+          setIsImporting(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      },
+      error: () => {
+        alert("Erreur lors de la lecture du fichier CSV");
+        setIsImporting(false);
+      }
+    });
+  };
+
   const confirmDelete = async () => {
     if (!studentToDelete) return;
     setLoading(true);
@@ -215,7 +323,8 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFiliere = selectedFiliere === 'Tous' || student.program === selectedFiliere;
     const matchesStatus = selectedStatus === 'Tous' || student.status === selectedStatus;
-    return matchesSearch && matchesFiliere && matchesStatus;
+    const matchesYear = selectedYear === 'Tous' || student.year?.toString() === selectedYear;
+    return matchesSearch && matchesFiliere && matchesStatus && matchesYear;
   });
 
   if (loading && students.length === 0) {
@@ -230,7 +339,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Base de données Étudiants</h1>
+          <h1 className="text-2xl font-bold text-black">Base de données Étudiants</h1>
           <p className="text-gray-500">Gestion complète des profils académiques et administratifs.</p>
         </div>
         {successMessage && (
@@ -240,6 +349,26 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
         )}
         {canManage && (
           <div className="flex gap-2">
+            <input 
+              type="file" 
+              accept=".csv" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleImportCSV} 
+            />
+            <button 
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest italic"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all uppercase text-[10px] tracking-widest italic"
+            >
+              <FileUp className="w-4 h-4" /> {isImporting ? 'Importation...' : 'Import CSV'}
+            </button>
             <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 uppercase text-xs tracking-widest font-black italic">
               <Plus className="w-4 h-4" /> Nouvel Étudiant
             </button>
@@ -255,7 +384,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
             placeholder="Rechercher un étudiant, No. ID, ou matricule..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl text-sm transition-all outline-none"
+            className="w-full pl-9 pr-4 py-2 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl text-sm transition-all outline-none text-black placeholder:text-gray-400"
           />
         </div>
         <div className="flex h-10 gap-2 w-full md:w-auto">
@@ -277,6 +406,15 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
             <option value="Tous">Statut: Tous</option>
             <option value="Active">Active</option>
             <option value="Non Active">Non Active</option>
+          </select>
+          <select 
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="px-3 border border-gray-100 rounded-xl text-xs font-semibold text-gray-600 bg-gray-50/50 outline-none focus:border-blue-500 flex-1 md:flex-none"
+          >
+            <option value="Tous">Année: Tous</option>
+            <option value="1">1ère Année</option>
+            <option value="2">2ème Année</option>
           </select>
         </div>
       </div>
@@ -316,8 +454,12 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-black text-gray-900 italic uppercase tracking-tight">{student.name}</h3>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{student.program}</p>
+                    <h3 className="font-black text-black italic uppercase tracking-tight">{student.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{student.program}</p>
+                      <span className="w-1 h-1 rounded-full bg-gray-300" />
+                      <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest italic">{student.year}{Number(student.year) === 1 ? 'ère' : 'ème'} Année</p>
+                    </div>
                   </div>
                 </div>
                 {canManage && (
@@ -356,7 +498,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                  <div className="mb-2">
                     <div className="flex justify-between items-center mb-1">
                        <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Scolarité</span>
-                       <span className="text-xs font-bold text-gray-900">{totalPaid} / {student.totalTuition || 0} MAD</span>
+                       <span className="text-xs font-bold text-black">{totalPaid} / {student.totalTuition || 0} MAD</span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
                        <div className={cn("h-1.5 rounded-full transition-all", ((totalPaid / (student.totalTuition || 1)) >= 1) ? 'bg-green-500' : 'bg-blue-500')} style={{ width: `${Math.min((totalPaid / (student.totalTuition || 1)) * 100, 100)}%` }}></div>
@@ -409,11 +551,11 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-[48px] shadow-2xl relative flex flex-col p-8 scrollbar-hide">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-brand-bg/80 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-[48px] shadow-2xl relative flex flex-col p-8 scrollbar-hide border border-gray-100">
               <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 italic uppercase tracking-tighter">
+                  <h2 className="text-2xl font-black text-black italic uppercase tracking-tighter">
                     {editingStudent ? 'Éditer Étudiant' : 'Nouvel Étudiant'}
                   </h2>
                   <p className="text-gray-400 text-xs font-bold uppercase tracking-widest italic">Nexus Academic Management</p>
@@ -437,70 +579,70 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Identifiant Unique (Matricule / ID)*</label>
-                    <input required type="text" value={formData.identifiant} onChange={(e) => setFormData({...formData, identifiant: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input required type="text" value={formData.identifiant} onChange={(e) => setFormData({...formData, identifiant: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
                   
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Nom Complet (nom + prénom)*</label>
-                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Date de naissance</label>
-                    <input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Lieu de naissance</label>
-                    <input type="text" value={formData.placeOfBirth} onChange={(e) => setFormData({...formData, placeOfBirth: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.placeOfBirth} onChange={(e) => setFormData({...formData, placeOfBirth: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Genre</label>
-                    <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm">
+                    <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black">
                       <option value="M">Masculin</option>
                       <option value="F">Féminin</option>
                     </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Nationalité</label>
-                    <input type="text" value={formData.nationality} onChange={(e) => setFormData({...formData, nationality: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.nationality} onChange={(e) => setFormData({...formData, nationality: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">CIN / Passport</label>
-                    <input type="text" value={formData.cinOrPassport} onChange={(e) => setFormData({...formData, cinOrPassport: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.cinOrPassport} onChange={(e) => setFormData({...formData, cinOrPassport: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Email Personnel*</label>
-                    <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Adresse complète</label>
-                    <textarea value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} rows={2} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm resize-none"></textarea>
+                    <textarea value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} rows={2} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black resize-none"></textarea>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Téléphone personnel</label>
-                    <input type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">WhatsApp Number</label>
-                    <input type="text" value={formData.whatsappPhone} onChange={(e) => setFormData({...formData, whatsappPhone: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.whatsappPhone} onChange={(e) => setFormData({...formData, whatsappPhone: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Téléphone Parent</label>
-                    <input type="text" value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Nom du Parent</label>
-                    <input type="text" value={formData.parentName} onChange={(e) => setFormData({...formData, parentName: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                    <input type="text" value={formData.parentName} onChange={(e) => setFormData({...formData, parentName: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Dernier diplôme / filière bac + moyenne</label>
-                    <input type="text" value={formData.lastDegree} onChange={(e) => setFormData({...formData, lastDegree: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" placeholder="Ex: Baccalauréat SVT - 14.5/20" />
+                    <input type="text" value={formData.lastDegree} onChange={(e) => setFormData({...formData, lastDegree: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" placeholder="Ex: Baccalauréat SVT - 14.5/20" />
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
@@ -510,7 +652,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Programme*</label>
-                    <select value={formData.program} onChange={(e) => setFormData({...formData, program: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm">
+                    <select value={formData.program} onChange={(e) => setFormData({...formData, program: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black">
                       {filieres.map(f => (
                         <option key={f.id} value={f.name}>{f.name}</option>
                       ))}
@@ -518,14 +660,14 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Année Actuelle*</label>
-                    <select value={formData.year} onChange={(e) => setFormData({...formData, year: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm">
+                    <select value={formData.year} onChange={(e) => setFormData({...formData, year: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black">
                       <option value="1">1ère Année</option>
                       <option value="2">2ème Année</option>
                     </select>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Statut</label>
-                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm">
+                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black">
                       <option value="Active">Active</option>
                       <option value="Non Active">Non Active</option>
                     </select>
@@ -533,11 +675,11 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                   <div className="space-y-1 md:col-span-2 grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Année Entrée</label>
-                      <input type="text" placeholder="2024" value={formData.registrationYear} onChange={(e) => setFormData({...formData, registrationYear: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                      <input type="text" placeholder="2024" value={formData.registrationYear} onChange={(e) => setFormData({...formData, registrationYear: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                     </div>
                     <div className="space-y-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2 italic">Année Sortie</label>
-                      <input type="text" placeholder="2026" value={formData.deactivationYear} onChange={(e) => setFormData({...formData, deactivationYear: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm" />
+                      <input type="text" placeholder="2026" value={formData.deactivationYear} onChange={(e) => setFormData({...formData, deactivationYear: e.target.value})} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-3xl outline-none font-bold italic transition-all text-sm text-black" />
                     </div>
                   </div>
                 </div>
@@ -557,8 +699,8 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
       <AnimatePresence>
         {previewStudent && (
            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPreviewStudent(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-[48px] shadow-2xl relative flex flex-col p-8 scrollbar-hide">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPreviewStudent(null)} className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-[48px] shadow-2xl relative flex flex-col p-8 scrollbar-hide border border-gray-100">
                   <div className="flex justify-between items-start mb-6">
                      <div className="flex gap-6 items-center">
                         <div className="w-24 h-24 rounded-[32px] bg-blue-100 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
@@ -569,7 +711,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                             )}
                         </div>
                         <div>
-                          <h2 className="text-3xl font-black text-gray-900 italic uppercase tracking-tighter">{previewStudent.name}</h2>
+                          <h2 className="text-3xl font-black text-black italic uppercase tracking-tighter">{previewStudent.name}</h2>
                           <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">{previewStudent.program} - Année {previewStudent.year}</p>
                           <span className="inline-block mt-3 px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-green-100">{previewStudent.status}</span>
                         </div>
@@ -594,57 +736,57 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-6 border-t border-gray-100 pt-8">
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Identifiant</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.identifiant || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.identifiant || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Email</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.email || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.email || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Téléphone</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.phone || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.phone || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">WhatsApp</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.whatsappPhone || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.whatsappPhone || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Date & Lieu de naissance</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.dateOfBirth || '-'} à {previewStudent.placeOfBirth || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.dateOfBirth || '-'} à {previewStudent.placeOfBirth || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Genre & Nationalité</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.gender === 'M' ? 'Masculin' : (previewStudent.gender === 'F' ? 'Féminin' : '-')} - {previewStudent.nationality || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.gender === 'M' ? 'Masculin' : (previewStudent.gender === 'F' ? 'Féminin' : '-')} - {previewStudent.nationality || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">CIN / Passport</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.cinOrPassport || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.cinOrPassport || '-'}</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Parent / Tuteur</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.parentName || '-'} ({previewStudent.parentPhone || '-'})</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.parentName || '-'} ({previewStudent.parentPhone || '-'})</p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Frais de Scolarité Globaux</span>
-                         <p className="text-sm font-bold text-gray-900">
+                         <p className="text-sm font-bold text-black">
                            {invoices.filter(inv => (inv.studentId === previewStudent.id || inv.student === previewStudent.name || inv.studentName === previewStudent.name) && (inv.status === 'Paid' || inv.status === 'paid')).reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0)} / {previewStudent.totalTuition || 0} MAD
                          </p>
                       </div>
                       <div className="space-y-1">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Période académique</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.registrationYear || '?'} - {previewStudent.deactivationYear || 'Présent'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.registrationYear || '?'} - {previewStudent.deactivationYear || 'Présent'}</p>
                       </div>
                       <div className="space-y-1 md:col-span-2">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Adresse Complète</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.address || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.address || '-'}</p>
                       </div>
                       <div className="space-y-1 md:col-span-2">
                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Dernier Diplôme / Filière BAC</span>
-                         <p className="text-sm font-bold text-gray-900">{previewStudent.lastDegree || '-'}</p>
+                         <p className="text-sm font-bold text-black">{previewStudent.lastDegree || '-'}</p>
                       </div>
                   </div>
               </motion.div>
-           </div>
+            </div>
         )}
       </AnimatePresence>
     </div>

@@ -1,28 +1,13 @@
 import React from 'react';
 import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  GraduationCap, 
-  Settings, 
-  LogOut,
   School,
-  DollarSign,
-  CalendarDays,
-  UserCheck,
-  Trophy,
-  Megaphone,
-  Briefcase,
-  Layers,
-  ClipboardList,
-  BookOpen,
-  Library,
-  MessageSquare,
-  BarChart3,
-  Globe
+  Globe,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { NAVIGATION_SECTIONS } from '../constants';
 
 import { UserRole } from '../types';
 
@@ -31,52 +16,15 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void;
   activeRole: UserRole;
   user: any;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const Sidebar = ({ activeTab, setActiveTab, activeRole, user }: SidebarProps) => {
+export const Sidebar = ({ activeTab, setActiveTab, activeRole, user, isOpen, onClose }: SidebarProps) => {
   const isSuperAdmin = user?.isSuperAdmin === true;
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
-  const allSections = [
-    {
-      title: 'Principal',
-      items: [
-        { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, roles: ['Admin', 'Staff', 'Student'] },
-        { id: 'director-bi', label: 'Analyses BI', icon: BarChart3, roles: ['Admin', 'Staff'] },
-      ]
-    },
-    {
-      title: 'Portails',
-      items: [
-        { id: 'student-portal', label: 'Espace Étudiant', icon: BookOpen, roles: ['Student'] },
-      ]
-    },
-    {
-      title: 'Gestion Académique',
-      items: [
-        { id: 'academic', label: 'Structure Scolaire', icon: Layers, roles: ['Admin', 'Staff'] },
-        { id: 'students', label: 'Base Étudiants', icon: Users, roles: ['Admin', 'Staff'] },
-        { id: 'schedule', label: 'Emplois du temps', icon: CalendarDays, roles: ['Admin', 'Staff', 'Student'] },
-        { id: 'notes', label: 'Gestion des Notes', icon: Trophy, roles: ['Admin', 'Staff', 'Student'] },
-        { id: 'library', label: 'Bibliothèque Digitale', icon: Library, roles: ['Admin', 'Staff', 'Student'] },
-      ]
-    },
-    {
-      title: 'Opérations 3S',
-      items: [
-        { id: 'attendance', label: 'Présences', icon: UserCheck, roles: ['Admin', 'Staff', 'Student'] },
-      ]
-    },
-    {
-      title: 'Finance & RH',
-      items: [
-        { id: 'finance', label: 'Finance & Facturation', icon: DollarSign, roles: ['Admin'] },
-        { id: 'teachers', label: 'Gestion des Enseignants', icon: GraduationCap, roles: ['Admin', 'Staff'] },
-        { id: 'staff', label: 'Gestion Personnels', icon: Users, roles: ['Admin', 'Staff'] },
-      ]
-    }
-  ];
-
-  const sections = allSections.map(section => ({
+  const sections = NAVIGATION_SECTIONS.map(section => ({
     ...section,
     items: section.items.filter(item => {
       const roleMatch = item.roles.includes(activeRole);
@@ -86,22 +34,56 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user }: SidebarPr
   })).filter(section => section.items.length > 0);
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 overflow-y-auto">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 z-[60] lg:hidden backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside className={cn(
+        "bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-[70]",
+        "fixed lg:sticky top-0 left-0 bottom-0",
+        isCollapsed ? "w-20" : "w-64",
+        isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+      )}>
+        <div
+          onClick={() => setActiveTab('school-profile')}
+          className={cn("p-6 flex items-center gap-3 relative w-full", isCollapsed ? "justify-center px-0" : "hover:bg-gray-50 transition-colors cursor-pointer")}
+        >
+        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-500/20">
           <School className="w-6 h-6" />
         </div>
-        <div>
-          <h2 className="font-bold text-gray-900 leading-tight tracking-tight uppercase italic">{user?.schoolName || 'EducaSys'}</h2>
-          <p className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">{user?.schoolSubdomain ? `${user.schoolSubdomain}.educasys` : 'Global SaaS'}</p>
-        </div>
+        {!isCollapsed && (
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }} 
+            animate={{ opacity: 1, x: 0 }}
+            className="overflow-hidden text-left"
+          >
+            <h2 className="font-display font-black text-black leading-none tracking-tight uppercase italic truncate">{user?.schoolName || 'EducaSys'}</h2>
+            <p className="text-[9px] text-gray-400 font-bold tracking-[0.2em] uppercase mt-1 truncate">{user?.schoolSubdomain || 'Cloud'}</p>
+          </motion.div>
+        )}
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}
+          className="absolute -right-3 top-10 w-6 h-6 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors z-[60]"
+        >
+          <ChevronRight className={cn("w-3 h-3 transition-transform text-gray-400", isCollapsed ? "" : "rotate-180")} />
+        </button>
       </div>
 
-      {user?.isSuperAdmin && (
-        <div className="px-6 mb-4">
+      {user?.isSuperAdmin && !isCollapsed && (
+        <div className="px-6 mb-6">
            <Link 
              to="/super-admin"
-             className="flex items-center gap-3 px-4 py-3 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] italic shadow-xl shadow-gray-200 transition-all hover:scale-105 active:scale-95"
+             className="flex items-center gap-3 px-4 py-3 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] italic shadow-lg shadow-gray-200 transition-all hover:scale-105 active:scale-95"
            >
              <Globe className="w-4 h-4 text-blue-400" />
              Panel Global
@@ -109,10 +91,24 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user }: SidebarPr
         </div>
       )}
 
-      <nav className="flex-1 px-4 mt-2 space-y-6">
+      {user?.isSuperAdmin && isCollapsed && (
+        <div className="px-6 mb-6 flex justify-center">
+           <Link 
+             to="/super-admin"
+             className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center shadow-md transition-all hover:scale-110"
+             title="Panel Global"
+           >
+             <Globe className="w-4 h-4 text-blue-400" />
+           </Link>
+        </div>
+      )}
+
+      <nav className="flex-1 px-4 mt-2 space-y-8 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {sections.map((section) => (
-          <div key={section.title}>
-            <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{section.title}</p>
+          <div key={section.title} className="space-y-2">
+            {!isCollapsed && (
+              <p className="px-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">{section.title}</p>
+            )}
             <div className="space-y-1">
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -121,15 +117,19 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user }: SidebarPr
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
+                    title={isCollapsed ? item.label : ""}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all group",
+                      "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all relative group",
                       isActive 
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                        ? "bg-blue-600 text-white shadow-xl shadow-blue-500/20" 
                         : "text-gray-500 hover:bg-gray-50 hover:text-blue-600"
                     )}
                   >
-                    <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-gray-400 group-hover:text-blue-600")} />
-                    {item.label}
+                    <Icon className={cn("w-5 h-5 shrink-0 transition-colors", isActive ? "text-white" : "text-gray-400 group-hover:text-blue-600")} />
+                    {!isCollapsed && <span>{item.label}</span>}
+                    {isActive && isCollapsed && (
+                       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-l-full" />
+                    )}
                   </button>
                 );
               })}
@@ -138,24 +138,36 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user }: SidebarPr
         ))}
       </nav>
 
-      <div className="p-4 mt-auto">
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 pt-6">
+      {!isCollapsed && (
+        <div className="p-4 mt-auto mb-2">
+          <div className="bg-gray-50 border border-gray-100 rounded-[24px] p-4 flex items-center gap-3">
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center font-black italic shadow-sm shrink-0",
+              activeRole === 'Admin' ? "bg-gray-900 text-white" : "bg-blue-500 text-white"
+            )}>
+              {activeRole[0]}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs font-black text-black truncate">
+                 {user?.name || 'Utilisateur'}
+              </p>
+              <p className="text-[9px] text-gray-400 truncate uppercase tracking-widest font-black italic">{activeRole}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {isCollapsed && (
+        <div className="p-4 mt-auto mb-2 flex justify-center">
           <div className={cn(
-            "w-8 h-8 rounded-xl flex items-center justify-center font-black italic shadow-sm",
-            activeRole === 'Admin' ? "bg-gray-900 text-white" :
-            activeRole === 'Student' ? "bg-blue-600 text-white" :
-            activeRole === 'Teacher' ? "bg-purple-600 text-white" : "bg-gray-400 text-white"
+            "w-10 h-10 rounded-xl flex items-center justify-center font-black italic shadow-lg animate-pulse-subtle",
+            activeRole === 'Admin' ? "bg-gray-900 text-white" : "bg-blue-500 text-white"
           )}>
             {activeRole[0]}
           </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-bold text-gray-900 truncate">
-               {user?.name || 'Utilisateur EducaSys'}
-            </p>
-            <p className="text-[10px] text-gray-400 truncate uppercase tracking-widest font-medium">{activeRole}</p>
-          </div>
         </div>
-      </div>
+      )}
     </aside>
+    </>
   );
 };

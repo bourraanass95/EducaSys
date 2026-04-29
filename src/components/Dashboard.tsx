@@ -42,7 +42,7 @@ const StatCard = ({ title, value, icon: Icon, color = "blue" }: any) => {
       </div>
       <div>
         <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-2xl font-bold text-black">{value}</p>
       </div>
     </div>
   );
@@ -175,7 +175,7 @@ export const Dashboard = ({ user }: { user: any }) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Aperçu Général</h1>
+          <h1 className="text-2xl font-bold text-black">Aperçu Général</h1>
           <p className="text-gray-500 text-sm mt-1">Tableau de bord opérationnel résumant les données du système.</p>
         </div>
 
@@ -210,7 +210,7 @@ export const Dashboard = ({ user }: { user: any }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
           <div className="mb-6">
-             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+             <h3 className="text-lg font-bold text-black flex items-center gap-2">
                <Wallet className="w-4 h-4 text-gray-400" />
                État Financier
              </h3>
@@ -233,7 +233,7 @@ export const Dashboard = ({ user }: { user: any }) => {
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-             <h3 className="font-bold text-gray-900 mb-4">Statuts des Étudiants</h3>
+             <h3 className="font-bold text-black mb-4">Statuts des Étudiants</h3>
              <div className="flex-1 min-h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                    <PieChart>
@@ -247,7 +247,7 @@ export const Dashboard = ({ user }: { user: any }) => {
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-             <h3 className="font-bold text-gray-900 mb-4">Rôles Personnel</h3>
+             <h3 className="font-bold text-black mb-4">Rôles Personnel</h3>
              <div className="flex-1 min-h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                    <BarChart data={computed.staffRoleData}>
@@ -264,7 +264,7 @@ export const Dashboard = ({ user }: { user: any }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-           <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
+           <h3 className="font-bold text-black mb-6 flex items-center gap-2">
              <List className="w-5 h-5 text-gray-400" />
              Top 5 Académique (Filtré)
            </h3>
@@ -278,11 +278,11 @@ export const Dashboard = ({ user }: { user: any }) => {
                     <div className="flex items-center gap-3">
                        <span className="text-xs font-black text-blue-600 w-4">{i+1}.</span>
                        <div>
-                          <p className="text-sm font-bold text-gray-900">{s.name}</p>
+                          <p className="text-sm font-bold text-black">{s.name}</p>
                           <p className="text-[10px] text-gray-500">{s.program}</p>
                        </div>
                     </div>
-                    <span className="text-sm font-black text-gray-900 bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">
+                    <span className="text-sm font-black text-black bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">
                       {parseFloat(s.average || 0).toFixed(1)}/20
                     </span>
                   </div>
@@ -292,7 +292,7 @@ export const Dashboard = ({ user }: { user: any }) => {
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-           <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
+           <h3 className="font-bold text-black mb-6 flex items-center gap-2">
              <CheckCircle2 className="w-5 h-5 text-gray-400" />
              Informations
            </h3>
@@ -308,7 +308,7 @@ export const Dashboard = ({ user }: { user: any }) => {
             <div className="flex items-center gap-2">
               <List className="w-5 h-5 text-gray-400" />
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Filières Actives</h2>
+                <h2 className="text-lg font-bold text-black">Filières Actives</h2>
                 <p className="text-xs text-gray-500 mt-1">Liste des programmes configurés</p>
               </div>
             </div>
@@ -323,7 +323,7 @@ export const Dashboard = ({ user }: { user: any }) => {
                   {f.code || f.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-sm">{f.name}</h4>
+                  <h4 className="font-semibold text-black text-sm">{f.name}</h4>
                   <p className="text-xs text-gray-500 mt-0.5">{f.studentCount || 0} Étudiant(s)</p>
                 </div>
               </div>

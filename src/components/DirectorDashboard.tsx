@@ -14,7 +14,9 @@ import {
   GraduationCap,
   Clock,
   ChevronDown,
-  Search
+  Search,
+  Sparkles,
+  X
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -34,8 +36,12 @@ import {
   ComposedChart
 } from 'recharts';
 import { api } from '../services/api';
+import { geminiService } from '../services/geminiService';
+import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
 const COLORS = {
   primary: '#2563eb',
@@ -53,6 +59,9 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [showAIModal, setShowAIModal] = useState(false);
   
   const [filters, setFilters] = useState({ 
     filiere: 'all', 
@@ -113,7 +122,7 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
   ), [raw.students, filters]);
 
   const filteredInvoices = useMemo(() => raw.invoices.filter((inv: any) => {
-    const student = studentMap.get(inv.studentId) || studentNameMap.get(inv.student);
+    const student = (studentMap.get(inv.studentId) || studentNameMap.get(inv.student)) as any;
     return student && (filters.filiere === 'all' || student.program === filters.filiere);
   }), [raw.invoices, studentMap, studentNameMap, filters.filiere]);
 
@@ -198,7 +207,7 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
     raw.invoices.forEach((inv: any) => {
       const amt = parseFloat(inv.amount) || 0;
       if (inv.status === 'Paid' || inv.status === 'paid') {
-        const student = studentMap.get(inv.studentId) || studentNameMap.get(inv.student);
+        const student = (studentMap.get(inv.studentId) || studentNameMap.get(inv.student)) as any;
         if (student && (filters.filiere === 'all' || student.program === filters.filiere)) {
           totalRecovered += amt;
           
@@ -261,6 +270,21 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
       isEmpty: !hasData
     };
   }, [raw, filters, filteredStudents, studentMap, studentNameMap]);
+
+  const handleAIAnalysis = async () => {
+    if (!computed) return;
+    setIsAnalyzing(true);
+    setAiInsight(null);
+    try {
+      const insight = await geminiService.analyzeSchoolPerformance(computed);
+      setAiInsight(insight);
+      setShowAIModal(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const exportReport = () => {
     if (!computed) return;
@@ -339,6 +363,15 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
         
         <div className="flex flex-wrap items-center gap-3">
           <button 
+            onClick={handleAIAnalysis}
+            disabled={isAnalyzing}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 hover:brightness-110 disabled:opacity-50"
+          >
+            <Sparkles className={cn("w-4 h-4", isAnalyzing && "animate-spin")} />
+            {isAnalyzing ? 'Analyse...' : 'Analyse Smart'}
+          </button>
+
+          <button 
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${showFilters ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
           >
@@ -383,7 +416,6 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
               <option value="all">Toutes les années</option>
               <option value="1">1ère Année (L1)</option>
               <option value="2">2ème Année (L2)</option>
-              <option value="3">3ème Année (L3)</option>
             </select>
           </div>
 
@@ -419,7 +451,7 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'Total Étudiants', value: computed.kpis.students, icon: Users, color: 'blue', sub: 'Effectif filtré' },
           { label: 'Moyenne Générale', value: `${computed.kpis.avgGrade.toFixed(2)}`, icon: Target, color: 'emerald', sub: '/20 Points' },
@@ -431,15 +463,15 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
             <div className={`p-3 rounded-2xl w-fit mb-4 bg-${kpi.color}-50 text-${kpi.color}-600 group-hover:scale-110 transition-transform`}>
               <kpi.icon className="w-5 h-5" />
             </div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{kpi.label}</p>
-            <h3 className="text-2xl font-black text-gray-900 mt-1">{kpi.value}</h3>
-            <p className="text-[10px] text-gray-400 mt-1 font-medium">{kpi.sub}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider truncate">{kpi.label}</p>
+            <h3 className="text-2xl font-black text-gray-900 mt-1 truncate">{kpi.value}</h3>
+            <p className="text-[10px] text-gray-400 mt-1 font-medium truncate">{kpi.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Analysis Tabs */}
-      <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-fit max-w-full overflow-x-auto">
+      <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-fit max-w-full overflow-x-auto scrollbar-none">
         {[
           { id: 'global', label: 'Vue d\'ensemble' },
           { id: 'academics', label: 'Académique' },
@@ -674,6 +706,58 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
           </div>
         )}
       </div>
+
+      {/* AI Insight Modal */}
+      <AnimatePresence>
+        {showAIModal && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAIModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-[32px] shadow-2xl z-[210] p-8 overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-6">
+                <button onClick={() => setShowAIModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-200">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight italic uppercase">Analyse Stratégique Nexus</h3>
+                  <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Intelligence Artificielle Générative</p>
+                </div>
+              </div>
+
+              <div className="prose prose-blue max-w-none prose-sm">
+                <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50 text-gray-700 leading-relaxed font-medium">
+                  <ReactMarkdown>{aiInsight || 'Génération de l\'analyse en cours...'}</ReactMarkdown>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button 
+                  onClick={() => setShowAIModal(false)}
+                  className="px-8 py-3 bg-gray-900 text-white rounded-xl font-black uppercase italic text-xs tracking-widest hover:bg-black transition-all"
+                >
+                  Fermer l'Analyse
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   School, 
   Plus, 
-  Settings, 
   ExternalLink, 
   ShieldCheck, 
   User, 
@@ -29,7 +28,8 @@ import {
   Download,
   RefreshCcw,
   Trash,
-  Info
+  Info,
+  LogOut
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
@@ -38,7 +38,7 @@ import { cn, dedupeById } from '../lib/utils';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
-export const SuperAdminDashboard = ({ user }: { user?: any }) => {
+export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?: () => void }) => {
   const navigate = useNavigate();
   const [schools, setSchools] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -655,20 +655,30 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
         <div className="absolute inset-0 bg-blue-50/50 pointer-events-none" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
         
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div>
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="text-left">
             <div className="flex items-center gap-3 text-blue-600 mb-2">
                <Globe className="w-5 h-5 animate-pulse" />
                <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">Infrastructure Globale Nexus</span>
             </div>
-            <h1 className="text-4xl font-black text-gray-900 uppercase italic tracking-tighter leading-none mb-2">
+            <h1 className="text-3xl md:text-4xl font-black text-gray-900 uppercase italic tracking-tighter leading-none mb-2">
               Panel <span className="text-blue-600">Global</span>
             </h1>
             <p className="text-gray-500 text-sm font-medium">Gestion multi-tenant et déploiement d'instances EducaSys</p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+             {onLogout && (
+               <button 
+                  type="button"
+                  onClick={onLogout}
+                  className="flex-1 md:flex-none px-4 md:px-6 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-2xl font-black uppercase italic text-xs transition-all flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+               >
+                  <LogOut className="w-4 h-4" /> <span className="sm:inline">Quitter</span>
+               </button>
+             )}
              <button 
+                type="button"
                 onClick={() => {
                   if (!isSuperSuperAdmin) {
                     showToast('Seul le Super Admin principal peut réinitialiser le système.', 'error');
@@ -677,19 +687,21 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                   setShowWipeConfirm(true);
                 }}
                 disabled={isWiping}
-                className="px-6 py-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-2xl font-black uppercase italic text-xs transition-all flex items-center gap-2"
+                className="flex-1 md:flex-none px-4 md:px-6 py-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-2xl font-black uppercase italic text-xs transition-all flex items-center justify-center gap-2 whitespace-nowrap"
              >
-                {isWiping ? 'Réinitialisation...' : 'Vider Tout'}
+                {isWiping ? 'Reset...' : 'Vider Tout'}
              </button>
              <button 
+                type="button"
                 onClick={() => navigate('/')}
-                className="px-6 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-900 rounded-2xl font-black uppercase italic text-xs transition-all flex items-center gap-2"
+                className="flex-1 md:flex-none px-4 md:px-6 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-900 rounded-2xl font-black uppercase italic text-xs transition-all flex items-center justify-center gap-2 whitespace-nowrap"
              >
-                <ArrowLeft className="w-4 h-4" /> Retour Home
+                <ArrowLeft className="w-4 h-4" /> <span className="sm:inline">Retour</span>
              </button>
              <button 
+                type="button"
                 onClick={() => openAddModal()}
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase italic text-sm shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2"
+                className="w-full md:w-auto px-6 md:px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase italic text-sm shadow-2xl shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
              >
                 <Plus className="w-5 h-5" /> Déployer Nouvelle Instance
              </button>
@@ -697,9 +709,9 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 -mt-16 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 -mt-16 relative z-20">
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
            {[
              { label: 'Instances Totales', val: schools.length, icon: Building2, col: 'blue' },
              { label: 'Demandes en Attente', val: requests.filter(r => r.status === 'Pending').length, icon: Users, col: 'emerald' },
@@ -713,7 +725,7 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                key={stat.label}
                className="bg-white p-6 rounded-[32px] shadow-xl shadow-gray-200/50 border border-white flex items-center gap-4 group hover:scale-[1.02] transition-all cursor-default"
              >
-                <div className={`p-4 rounded-2xl ${
+                <div className={`p-4 rounded-2xl shrink-0 ${
                   stat.col === 'blue' ? 'bg-blue-50 text-blue-600' :
                   stat.col === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
                   stat.col === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
@@ -721,9 +733,9 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                 } group-hover:rotate-12 transition-transform`}>
                    <stat.icon className="w-6 h-6" />
                 </div>
-                <div>
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic leading-none mb-1">{stat.label}</p>
-                   <p className="text-2xl font-black text-gray-900">{stat.val}</p>
+                <div className="min-w-0">
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic leading-none mb-1 truncate">{stat.label}</p>
+                   <p className="text-2xl font-black text-gray-900 truncate">{stat.val}</p>
                 </div>
              </motion.div>
            ))}
@@ -891,12 +903,14 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                                </div>
                                <div className="flex gap-2">
                                  <button 
+                                   type="button"
                                    onClick={() => handlePaymentAction(school.id, 'paid')}
                                    className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all"
                                  >
                                    Confirmé
                                  </button>
                                  <button 
+                                   type="button"
                                    onClick={() => handlePaymentAction(school.id, 'not_yet')}
                                    className={cn(
                                      "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
@@ -938,13 +952,14 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                              </div>
                           </div>
                         </td>
-                        <td className="px-8 py-6 text-right">
+                         <td className="px-8 py-6 text-right">
                            <div className="flex items-center justify-end gap-2">
                              <button 
+                               type="button"
                                onClick={() => openEditModal(school)}
                                className="p-3 bg-white hover:bg-gray-50 border border-gray-100 rounded-2xl text-gray-400 hover:text-blue-600 transition-all shadow-sm"
                              >
-                               <Settings className="w-4 h-4" />
+                               <Edit2 className="w-4 h-4" />
                              </button>
                              <Link 
                                to={`/${school.subdomain}/dashboard`}
@@ -953,6 +968,7 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                                <ExternalLink className="w-4 h-4" />
                              </Link>
                              <button 
+                               type="button"
                                onClick={() => setSchoolToDelete(school)}
                                className="p-3 bg-white hover:bg-rose-50 border border-gray-100 rounded-2xl text-gray-400 hover:text-rose-600 transition-all shadow-sm"
                              >
@@ -1226,9 +1242,9 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                            <td className="px-8 py-6 text-xs text-rose-600 font-bold italic">{h.deletedBy}</td>
                            <td className="px-8 py-6 text-right">
                               <div className="flex items-center justify-end gap-2 text-gray-400">
-                                 <button onClick={() => handleRestoreSchool(h)} className="p-2 hover:bg-gray-50 hover:text-emerald-600 rounded-xl transition-all" title="Restaurer"><RefreshCcw className="w-4 h-4" /></button>
-                                 <button onClick={() => openEditModal(h, true)} className="p-2 hover:bg-gray-50 hover:text-blue-600 rounded-xl transition-all" title="Voir/Modifier"><Settings className="w-4 h-4" /></button>
-                                 <button onClick={() => handlePermanentDeleteSchool(h.id)} className="p-2 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all" title="Supprimer définitivement"><Trash className="w-4 h-4" /></button>
+                                 <button type="button" onClick={() => handleRestoreSchool(h)} className="p-2 hover:bg-gray-50 hover:text-emerald-600 rounded-xl transition-all" title="Restaurer"><RefreshCcw className="w-4 h-4" /></button>
+                                 <button type="button" onClick={() => openEditModal(h, true)} className="p-2 hover:bg-gray-50 hover:text-blue-600 rounded-xl transition-all" title="Voir/Modifier"><Edit2 className="w-4 h-4" /></button>
+                                 <button type="button" onClick={() => handlePermanentDeleteSchool(h.id)} className="p-2 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all" title="Supprimer définitivement"><Trash className="w-4 h-4" /></button>
                               </div>
                            </td>
                         </tr>
@@ -1241,9 +1257,9 @@ export const SuperAdminDashboard = ({ user }: { user?: any }) => {
                            <td className="px-8 py-6 text-xs text-rose-600 font-bold italic">{h.deletedBy}</td>
                            <td className="px-8 py-6 text-right">
                               <div className="flex items-center justify-end gap-2 text-gray-400">
-                                 <button onClick={() => handleRestoreRequest(h)} className="p-2 hover:bg-gray-50 hover:text-emerald-600 rounded-xl transition-all" title="Restaurer"><RefreshCcw className="w-4 h-4" /></button>
-                                 <button onClick={() => openEditRequestModal(h)} className="p-2 hover:bg-gray-50 hover:text-blue-600 rounded-xl transition-all" title="Voir/Modifier"><Settings className="w-4 h-4" /></button>
-                                 <button onClick={() => handlePermanentDeleteRequest(h.id)} className="p-2 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all" title="Supprimer définitivement"><Trash className="w-4 h-4" /></button>
+                                 <button type="button" onClick={() => handleRestoreRequest(h)} className="p-2 hover:bg-gray-50 hover:text-emerald-600 rounded-xl transition-all" title="Restaurer"><RefreshCcw className="w-4 h-4" /></button>
+                                 <button type="button" onClick={() => openEditRequestModal(h)} className="p-2 hover:bg-gray-50 hover:text-blue-600 rounded-xl transition-all" title="Voir/Modifier"><Edit2 className="w-4 h-4" /></button>
+                                 <button type="button" onClick={() => handlePermanentDeleteRequest(h.id)} className="p-2 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all" title="Supprimer définitivement"><Trash className="w-4 h-4" /></button>
                               </div>
                            </td>
                         </tr>

@@ -21,7 +21,7 @@ interface SchoolLifeProps {
 export const SchoolLife = ({ activeRole }: SchoolLifeProps) => {
   const canPost = activeRole === 'Admin' || activeRole === 'Staff';
   const announcements = [
-    { id: 2, title: 'Conférence: L\'IA dans la Cybersécurité', date: '25 Avril 2026', type: 'Event' },
+    { id: 2, title: 'Conférence: Cybersécurité Avancée', date: '25 Avril 2026', type: 'Event' },
     { id: 3, title: 'Rappel: Paiement de Scolarité Mai', date: '18 Avril 2026', type: 'Finance' },
   ];
 

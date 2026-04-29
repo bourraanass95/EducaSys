@@ -95,7 +95,7 @@ export interface DashboardStats {
   alumniNetwork: number;
 }
 
-export type UserRole = 'Admin' | 'Staff' | 'Teacher' | 'Student';
+export type UserRole = 'Admin' | 'Staff';
 
 export interface User {
   id: string;
@@ -106,23 +106,6 @@ export interface User {
   schoolName?: string;
   schoolSubdomain?: string;
   isSuperAdmin?: boolean;
-}
-
-export interface TeacherPortalData {
-  id: string;
-  name: string;
-  schedule: Course[];
-  assignedClasses: string[];
-  pendingGrades: number;
-}
-
-export interface StudentPortalData {
-  id: string;
-  name: string;
-  absences: number;
-  averageGrade: number;
-  unpaidFees: number;
-  upcomingExams: Exam[];
 }
 
 export interface Message {

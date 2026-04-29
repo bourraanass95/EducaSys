@@ -10,12 +10,15 @@ import {
   ShieldCheck,
   Trash2,
   Clock,
-  MapPin
+  MapPin,
+  Download,
+  FileUp
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, dedupeById } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserRole } from '../types';
 import { api, StaffMember } from '../services/api';
+import Papa from 'papaparse';
 
 interface TeachersProps {
   activeRole: UserRole;
@@ -25,10 +28,13 @@ interface TeachersProps {
 export const Teachers = ({ activeRole, user }: TeachersProps) => {
   const [teachers, setTeachers] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modules, setModules] = useState<any[]>([]); // Added
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [selectedProfessor, setSelectedProfessor] = useState<string | null>(null);
   const [teacherSchedule, setTeacherSchedule] = useState<any[]>([]);
   const [isScheduleLoading, setIsScheduleLoading] = useState(false);
@@ -38,7 +44,6 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
 
   const [formData, setFormData] = useState({
     identifiant: '',
-    password: '',
     name: '',
     subject: 'Enseignant (Teacher)',
     email: '',
@@ -47,11 +52,13 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
     salary: '',
     paymentType: 'Prix fixe',
     hourlyRate: '',
-    nationality: ''
+    nationality: '',
+    moduleIds: [] as string[]
   });
 
   useEffect(() => {
     loadTeachers();
+    loadModules(); // Added
   }, []);
 
   const loadTeachers = async () => {
@@ -60,11 +67,20 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
       const data = await api.getStaff(user?.schoolId);
       const teacherRoles = ['Enseignant (Teacher)', 'Teacher', 'Professeur', 'Enseignant', 'Maître de Conférences', 'Intervenant'];
       const filtered = data.filter(s => teacherRoles.includes(s.subject));
-      setTeachers(filtered);
+      setTeachers(dedupeById(filtered));
     } catch (error) {
       console.error('Error loading teachers:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadModules = async () => {
+    try {
+      const data = await api.getGenericCollection('structures', user?.schoolId);
+      setModules(data.filter(m => m.type === 'Matière'));
+    } catch (error) {
+      console.error('Error loading modules:', error);
     }
   };
 
@@ -75,7 +91,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
     try {
       const allSchedules = await api.getGenericCollection('schedules', user?.schoolId);
       const filtered = allSchedules.filter(s => s.teacher === professorName);
-      setTeacherSchedule(filtered);
+      setTeacherSchedule(dedupeById(filtered));
     } catch (error) {
       console.error('Error fetching teacher schedule:', error);
     } finally {
@@ -96,7 +112,6 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
       setEditingMember(null);
       setFormData({ 
         identifiant: '', 
-        password: '', 
         name: '', 
         subject: 'Enseignant (Teacher)', 
         email: '', 
@@ -105,7 +120,8 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
         salary: '', 
         paymentType: 'Prix fixe',
         hourlyRate: '',
-        nationality: '' 
+        nationality: '',
+        moduleIds: [] as string[]
       });
       await loadTeachers();
     } catch (error) {
@@ -115,11 +131,104 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
     }
   };
 
+  const handleExportCSV = () => {
+    const dataToExport = filteredTeachers.map(t => ({
+      ID: t.identifiant,
+      Nom: t.name,
+      Titre: t.subject,
+      Email: t.email,
+      Phone: t.phone,
+      TypeContrat: t.type,
+      Salaire: t.salary,
+      TypePaiement: t.paymentType,
+      TauxHoraire: t.hourlyRate,
+      Nationalite: t.nationality
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `enseignants_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const importedData = results.data as any[];
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const row of importedData) {
+            try {
+              const identifiant = row.ID || row.identifiant || '';
+              const email = row.Email || row.email || '';
+
+              // Check for duplicates
+              const exists = teachers.some(t => 
+                (identifiant && t.identifiant === identifiant) || 
+                (email && t.email === email)
+              );
+
+              if (exists) {
+                errorCount++;
+                continue;
+              }
+
+              const payload = {
+                identifiant: identifiant,
+                name: row.Nom || row.name || '',
+                subject: row.Titre || row.subject || 'Enseignant (Teacher)',
+                email: email,
+                phone: row.Phone || row.phone || '',
+                type: row.TypeContrat || row.type || 'Permanent (CDI)',
+                salary: row.Salaire || row.salary || '',
+                paymentType: row.TypePaiement || row.paymentType || 'Prix fixe',
+                hourlyRate: row.TauxHoraire || row.hourlyRate || '',
+                nationality: row.Nationalite || row.nationality || ''
+              };
+
+              if (payload.name && payload.email) {
+                await api.addStaff(payload, user?.schoolId);
+                successCount++;
+              }
+            } catch (err) {
+              errorCount++;
+            }
+          }
+
+          alert(`${successCount} enseignants importés avec succès. ${errorCount} erreurs.`);
+          loadTeachers();
+        } catch (error) {
+          alert("Erreur lors de l'importation du fichier CSV");
+        } finally {
+          setIsImporting(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      },
+      error: () => {
+        alert("Erreur lors de la lecture du fichier CSV");
+        setIsImporting(false);
+      }
+    });
+  };
+
   const handleEdit = (member: any) => {
     setEditingMember(member);
     setFormData({
       identifiant: member.identifiant || '',
-      password: member.password || '',
       name: member.name,
       subject: member.subject,
       email: member.email,
@@ -128,7 +237,8 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
       salary: member.salary || '',
       paymentType: member.paymentType || 'Prix fixe',
       hourlyRate: member.hourlyRate || '',
-      nationality: member.nationality || ''
+      nationality: member.nationality || '',
+      moduleIds: member.moduleIds || []
     });
     setIsModalOpen(true);
   };
@@ -164,12 +274,32 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
           <p className="text-gray-500 font-medium">Administration du corps professoral et des emplois du temps.</p>
         </div>
         {canCreate && (
-          <button 
-            onClick={() => {
+          <div className="flex gap-2">
+            <input 
+              type="file" 
+              accept=".csv" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleImportCSV} 
+            />
+            <button 
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest italic"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-all uppercase text-[10px] tracking-widest italic"
+            >
+              <FileUp className="w-4 h-4" /> {isImporting ? 'Importation...' : 'Import CSV'}
+            </button>
+            <button 
+              onClick={() => {
               setEditingMember(null);
               setFormData({ 
                 identifiant: '', 
-                password: '', 
                 name: '', 
                 subject: 'Enseignant (Teacher)', 
                 email: '', 
@@ -178,7 +308,8 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
                 salary: '', 
                 paymentType: 'Prix fixe',
                 hourlyRate: '',
-                nationality: '' 
+                nationality: '',
+                moduleIds: [] as string[]
               });
               setIsModalOpen(true);
             }}
@@ -186,6 +317,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
           >
              <Plus className="w-4 h-4" /> Ajouter un Enseignant
           </button>
+          </div>
         )}
       </div>
 
@@ -203,7 +335,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {loading ? (
           Array(3).fill(0).map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse h-64" />
+            <div key={`skel-${i}`} className="bg-white p-6 rounded-2xl border border-gray-100 animate-pulse h-64" />
           ))
         ) : filteredTeachers.length > 0 ? (
           filteredTeachers.map((member, index) => (
@@ -294,6 +426,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 italic">Gestion du corps professoral</p>
                 </div>
                 <button 
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors shadow-sm"
                 >
@@ -406,6 +539,34 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
                       className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-600 rounded-2xl text-sm transition-all outline-none font-bold italic"
                     />
                   </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 pl-2 italic">Matières Enseignées</label>
+                    <div className="flex flex-wrap gap-2">
+                      {modules.map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            const isSelected = formData.moduleIds.includes(m.id);
+                            setFormData({
+                              ...formData,
+                              moduleIds: isSelected 
+                                ? formData.moduleIds.filter(id => id !== m.id)
+                                : [...formData.moduleIds, m.id]
+                            });
+                          }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all",
+                            formData.moduleIds.includes(m.id) 
+                              ? "bg-indigo-600 text-white" 
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          )}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4">
@@ -452,6 +613,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 italic">Emploi du temps hebdomadaire</p>
                 </div>
                 <button 
+                  type="button"
                   onClick={() => setIsPlanningModalOpen(false)}
                   className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors shadow-sm"
                 >
@@ -546,8 +708,8 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
               <h3 className="text-xl font-bold text-gray-900 mb-2">Supprimer l'enseignant ?</h3>
               <p className="text-sm text-gray-500 mb-6">Cette action est irréversible.</p>
               <div className="flex gap-4">
-                <button onClick={() => setMemberToDelete(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200">Annuler</button>
-                <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700">Supprimer</button>
+                <button type="button" onClick={() => setMemberToDelete(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200">Annuler</button>
+                <button type="button" onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700">Supprimer</button>
               </div>
             </motion.div>
           </div>
@@ -584,6 +746,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
                   </div>
                 </div>
                 <button 
+                  type="button"
                   onClick={() => setPreviewMember(null)}
                   className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors shadow-sm"
                 >

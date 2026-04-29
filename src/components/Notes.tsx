@@ -29,8 +29,10 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   const [modules, setModules] = useState<any[]>([]);
   const [selectedFiliere, setSelectedFiliere] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
+  const [selectedModule, setSelectedModule] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [classGrades, setClassGrades] = useState<any[]>([]);
 
   // Modal State
   const [activeStudent, setActiveStudent] = useState<any | null>(null);
@@ -41,17 +43,11 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   const [currentModuleExamCount, setCurrentModuleExamCount] = useState(1);
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
 
-  const isTeacher = activeRole === 'Teacher';
-  const isStudent = activeRole === 'Student';
   const canEdit = activeRole === 'Admin' || activeRole === 'Staff';
 
   useEffect(() => {
     loadInitialData();
-    if (isStudent && user) {
-      setSelectedFiliere(user.program || '');
-      setSelectedYear(user.year?.toString() || '1');
-    }
-  }, [isStudent, user]);
+  }, [user]);
 
   useEffect(() => {
     if (selectedFiliere && selectedYear) {
@@ -70,6 +66,28 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
     }
   }, [activeStudent, selectedModalModule]);
 
+  useEffect(() => {
+    if (selectedFiliere && selectedYear && selectedModule) {
+      loadClassGrades();
+    } else {
+      setClassGrades([]);
+    }
+  }, [selectedFiliere, selectedYear, selectedModule]);
+
+  const loadClassGrades = async () => {
+    try {
+      const allGrades = await api.getGenericCollection('notes_records', user?.schoolId);
+      const relevantGrades = allGrades.filter((g: any) => 
+        g.filiere === selectedFiliere &&
+        g.year === selectedYear &&
+        g.module === selectedModule
+      );
+      setClassGrades(relevantGrades);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const loadInitialData = async () => {
     try {
       const [fData, sData] = await Promise.all([
@@ -87,17 +105,13 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   const loadStudents = async () => {
     setLoading(true);
     try {
-      if (isStudent) {
-        setStudents([user]);
-      } else {
-        const allStudents = await api.getStudents(user?.schoolId);
-        const filtered = allStudents.filter((s: any) => 
-          s.status === 'Active' && 
-          s.program === selectedFiliere && 
-          s.year?.toString() === selectedYear
-        );
-        setStudents(filtered);
-      }
+      const allStudents = await api.getStudents(user?.schoolId);
+      const filtered = allStudents.filter((s: any) => 
+        s.status === 'Active' && 
+        s.program === selectedFiliere && 
+        s.year?.toString() === selectedYear
+      );
+      setStudents(filtered);
     } catch (error) {
       console.error(error);
     } finally {
@@ -154,7 +168,8 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
         year: selectedYear,
         module: selectedModalModule,
         scores: studentGrades,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        schoolId: user?.schoolId
       };
 
       if (existingRecordId) {
@@ -168,13 +183,17 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
         type: 'info',
         targetRoles: ['Admin', 'Staff'],
         read: false,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        schoolId: user?.schoolId
       }).catch(console.error);
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setActiveStudent(null);
       setSelectedModalModule('');
+      if (selectedModule === selectedModalModule) {
+        loadClassGrades();
+      }
     } catch (error) {
       alert('Erreur lors de l\'enregistrement des notes');
     } finally {
@@ -264,6 +283,15 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
     }
   };
 
+  const filiereObj = filieres.find(f => f.name === selectedFiliere);
+  const filteredModules = modules.filter(m => {
+    if (!filiereObj) return true;
+    if (m.filiereIds && Array.isArray(m.filiereIds) && m.filiereIds.length > 0) {
+      return m.filiereIds.includes(filiereObj.id);
+    }
+    return m.filiereId === filiereObj.id || !m.filiereId || m.filiereId === '' || (m.filiereIds && m.filiereIds.length === 0);
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -290,8 +318,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
         </div>
       </div>
 
-      {!isStudent && (
-        <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-wrap gap-4 items-end">
+      <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-wrap gap-4 items-end">
           <div className="space-y-1.5 flex-1 min-w-[200px]">
             <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-2 italic">Classe (Filière)</label>
             <select 
@@ -316,7 +343,10 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
               <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-2 italic">Année</label>
               <select 
                 value={selectedYear} 
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setSelectedModule('');
+                }}
                 className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-600 rounded-2xl text-sm font-bold italic outline-none transition-all"
               >
                 <option value="">Année...</option>
@@ -325,17 +355,28 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
               </select>
             </motion.div>
           )}
-        </div>
-      )}
 
-      {isStudent && (
-        <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-           <h2 className="text-xl font-black text-blue-600 uppercase italic">Mon Relevé de Notes</h2>
-           <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{selectedFiliere} • {selectedYear}{selectedYear === '1' ? 'ère' : 'ème'} Année</p>
+          {selectedFiliere && selectedYear && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-1.5 w-64"
+            >
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-2 italic">Module (Matière)</label>
+              <select 
+                value={selectedModule} 
+                onChange={(e) => setSelectedModule(e.target.value)}
+                className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-600 rounded-2xl text-sm font-bold italic outline-none transition-all"
+              >
+                <option value="">Tous les modules...</option>
+                {filteredModules.map(m => (
+                  <option key={m.id} value={m.name}>{m.name}</option>
+                ))}
+              </select>
+            </motion.div>
+          )}
         </div>
-      )}
-
-      {(!selectedFiliere || !selectedYear) && !isStudent ? (
+      {(!selectedFiliere || !selectedYear) ? (
         <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[48px] p-24 flex flex-col items-center justify-center text-center">
             <BookOpen className="w-20 h-20 text-gray-200 mb-6" />
             <h3 className="text-xl font-black italic text-gray-400 uppercase tracking-tighter mb-2">Configuration requise</h3>
@@ -357,7 +398,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
                  key={student.id} 
                  onClick={() => {
                    setActiveStudent(student);
-                   setSelectedModalModule('');
+                   setSelectedModalModule(selectedModule || '');
                  }}
                  className="flex items-center justify-between p-4 px-6 hover:bg-gray-50/80 rounded-[32px] cursor-pointer transition-colors group"
                >
@@ -372,14 +413,38 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
                  </div>
                  <div className="flex items-center gap-2">
                    <button 
+                     type="button"
                      onClick={(e) => exportSinglePDF(e, student)}
                      className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition-all uppercase tracking-widest flex items-center gap-1.5"
                    >
                      <FileDown className="w-3.5 h-3.5" /> PDF
                    </button>
-                   <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 group-hover:text-blue-600 group-hover:bg-blue-50 group-hover:border-blue-100 transition-all uppercase tracking-widest">
-                     {isStudent ? 'Voir Détails' : 'Saisir Notes'}
-                   </div>
+                   {selectedModule ? (
+                     <div className="flex items-center gap-4">
+                       <div className="flex gap-2 bg-gray-50 px-4 py-2 rounded-xl">
+                         {Array.from({ length: modules.find(m => m.name === selectedModule)?.examCount || 1 }).map((_, idx) => {
+                           const stRecord = classGrades.find(g => g.studentId === student.id);
+                           const score = stRecord?.scores?.[idx] !== undefined ? stRecord.scores[idx] : null;
+                           return (
+                             <div key={idx} className="flex flex-col items-center justify-center">
+                               <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">N{idx + 1}</span>
+                               <span className={cn(
+                                 "text-sm font-black w-8 text-center leading-none",
+                                 score === null ? "text-gray-300" : (score >= 10 ? "text-emerald-600" : "text-rose-500")
+                               )}>{score !== null ? score : '-'}</span>
+                             </div>
+                           );
+                         })}
+                       </div>
+                       <div className="px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-600 group-hover:bg-blue-100 transition-all uppercase tracking-widest">
+                         Éditer
+                       </div>
+                     </div>
+                   ) : (
+                     <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 group-hover:text-blue-600 group-hover:bg-blue-50 group-hover:border-blue-100 transition-all uppercase tracking-widest">
+                       Saisir Notes
+                     </div>
+                   )}
                  </div>
                </li>
             ))}

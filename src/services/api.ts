@@ -8,6 +8,7 @@ export interface AdminStats {
 
 export interface StaffMember {
   id: string;
+  identifiant?: string;
   name: string;
   subject: string;
   email: string;
@@ -17,6 +18,7 @@ export interface StaffMember {
   paymentType?: string;
   hourlyRate?: string;
   nationality?: string;
+  moduleIds?: string[];
 }
 
 export interface Invoice {
@@ -111,6 +113,7 @@ export const api = {
   async getStaff(schoolId?: string): Promise<StaffMember[]> {
     const url = schoolId ? `${BASE_URL}/staff?schoolId=${schoolId}` : `${BASE_URL}/staff`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch staff');
     return res.json();
   },
 
@@ -120,16 +123,18 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...member, schoolId })
     });
+    if (!res.ok) throw new Error('Failed to add staff');
     const data = await res.json();
     return data.id;
   },
 
   async updateStaff(id: string, data: Partial<StaffMember>): Promise<void> {
-    await fetch(`${BASE_URL}/staff/${id}`, {
+    const res = await fetch(`${BASE_URL}/staff/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    if (!res.ok) throw new Error('Failed to update staff');
   },
 
   async deleteStaff(id: string): Promise<void> {
@@ -140,6 +145,7 @@ export const api = {
   async getInvoices(schoolId?: string): Promise<Invoice[]> {
     const url = schoolId ? `${BASE_URL}/invoices?schoolId=${schoolId}` : `${BASE_URL}/invoices`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch invoices');
     return res.json();
   },
 
@@ -149,16 +155,18 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...invoice, schoolId })
     });
+    if (!res.ok) throw new Error('Failed to add invoice');
     const data = await res.json();
     return data.id;
   },
 
   async updateInvoice(id: string, data: any): Promise<void> {
-    await fetch(`${BASE_URL}/invoices/${id}`, {
+    const res = await fetch(`${BASE_URL}/invoices/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    if (!res.ok) throw new Error('Failed to update invoice');
   },
 
   async deleteInvoice(id: string): Promise<void> {
@@ -169,6 +177,7 @@ export const api = {
   async getGenericCollection(colName: string, schoolId?: string): Promise<any[]> {
     const url = schoolId ? `${BASE_URL}/${colName}?schoolId=${schoolId}` : `${BASE_URL}/${colName}`;
     const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Failed to fetch ${colName}`);
     return res.json();
   },
 
