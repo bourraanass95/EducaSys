@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "server.ts": {
+    "api/index.ts": {
       "includeFiles": "dist/**, firebase-applet-config.json"
     }
   },
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/server.ts"
+      "destination": "/api/index.ts"
     }
   ]
 }
