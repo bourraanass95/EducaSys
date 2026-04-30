@@ -37,13 +37,13 @@ export const api = {
       body: JSON.stringify({ identifiant, password })
     });
     
+    const text = await res.text();
     let data;
     try {
-      data = await res.json();
+      data = JSON.parse(text);
     } catch (e) {
-      const text = await res.text();
       console.error('Server returned non-JSON response:', text);
-      throw new Error('Le serveur a renvoyé une réponse invalide (non-JSON). Vérifiez la configuration Firebase.');
+      throw new Error('Le serveur a renvoyé une réponse invalide (non-JSON). Vérifiez la configuration du serveur.');
     }
     
     if (!res.ok) throw new Error(data.error || 'Failed to login');

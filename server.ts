@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getFirestore, 
   collection, 
@@ -41,17 +41,25 @@ function getDb() {
     config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   } else {
     config = {
-      apiKey: process.env.VITE_FIREBASE_API_KEY,
-      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.VITE_FIREBASE_APP_ID,
-      firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)'
+      apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
+      firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || process.env.FIREBASE_DATABASE_ID || '(default)'
     };
   }
   
-  firebaseApp = initializeApp(config);
+  if (!getApps().length) {
+    if (!config.apiKey) {
+      console.warn('⚠️ Firebase API Key missing in environment.');
+    }
+    firebaseApp = initializeApp(config);
+  } else {
+    firebaseApp = getApp();
+  }
+  
   db = getFirestore(firebaseApp, config.firestoreDatabaseId || '(default)');
   console.log(`Firebase Initialized for project: ${config.projectId}`);
   return db;
