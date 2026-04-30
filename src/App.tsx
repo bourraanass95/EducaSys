@@ -376,17 +376,26 @@ export default function App() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeRole, setActiveRole] = useState<UserRole>(() => {
-    const saved = localStorage.getItem('activeUser');
-    if (saved) {
-      const user = JSON.parse(saved);
-      return (user.role as UserRole) || 'Admin';
+    try {
+      const saved = localStorage.getItem('activeUser');
+      if (saved) {
+        const user = JSON.parse(saved);
+        return (user.role as UserRole) || 'Admin';
+      }
+    } catch (e) {
+      console.error('Failed to parse activeUser role:', e);
     }
     return 'Admin';
   });
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('isAuthenticated') === 'true');
   const [activeUser, setActiveUser] = useState<any>(() => {
-    const saved = localStorage.getItem('activeUser');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('activeUser');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error('Failed to parse activeUser:', e);
+      return null;
+    }
   });
 
   useEffect(() => {

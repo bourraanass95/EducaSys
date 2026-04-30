@@ -23,7 +23,8 @@ import {
   Briefcase,
   LogIn,
   Menu,
-  X
+  X,
+  Rocket
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
@@ -198,83 +199,107 @@ export const GlobalHome = () => {
       </AnimatePresence>
 
       {/* Hero */}
-      <section className="relative pt-44 pb-32 px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150vw] h-[1000px] bg-gradient-to-b from-blue-50 to-transparent -z-10 rounded-[100%]" />
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150vw] h-[1000px] bg-gradient-to-b from-blue-50/50 via-white to-transparent -z-10 rounded-[100%]" />
         
-        <div className="max-w-7xl mx-auto text-center">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
+            className="flex-1 text-center lg:text-left"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/5 border border-blue-600/10 rounded-full mb-8">
               <Sparkles className="w-3 h-3 text-blue-600" />
               <span className="text-[10px] font-black tracking-[0.2em] uppercase text-blue-600">Standard de Gestion 2026</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-display font-black tracking-tight leading-[0.9] mb-8 text-black transition-colors">
+            <h1 className="text-5xl md:text-7xl xl:text-8xl font-display font-black tracking-tight leading-[0.95] mb-8 text-black transition-colors">
               Gérez Votre École <br className="hidden md:block" /> 
-              Sans Stress 🚀
+              <span className="text-blue-600 italic">Sans Stress</span> 🚀
             </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-black font-medium leading-relaxed mb-12 transition-colors">
+            <p className="max-w-xl mx-auto lg:mx-0 text-lg md:text-xl text-gray-600 font-medium leading-relaxed mb-12 transition-colors">
               La solution complète pour digitaliser votre établissement. Élèves, professeurs, notes et finances, tout est là pour vous faire gagner du temps 🏫✨
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5">
               <button 
                 onClick={() => setShowRequestModal(true)}
-                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
               >
-                Démarrer Maintenant
+                Démarrer Maintenant <ArrowRight className="w-5 h-5" />
               </button>
-              <button 
-                onClick={() => {
-                  const el = document.getElementById('ecosysteme');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto px-10 py-5 bg-white text-black border border-gray-100 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2"
-              >
-                Découvrir Nexus <ArrowRight className="w-5 h-5 text-blue-600" />
-              </button>
-            </div>
-
-            {/* Dashboard Preview Overlay */}
-            <motion.div 
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="mt-20 relative max-w-5xl mx-auto"
-            >
-              <div className="relative bg-white rounded-[40px] shadow-3xl border-8 border-white overflow-hidden aspect-[16/9]">
-                <div className="absolute inset-0 bg-gray-50 flex flex-col">
-                  <div className="h-12 bg-white border-b border-gray-100 flex items-center px-4 gap-2">
-                    <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <div className="flex items-center gap-4 px-6 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                <div className="flex -space-x-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
+                      <img src={`https://i.pravatar.cc/150?u=${i+20}`} alt="avatar" className="w-full h-full object-cover" />
                     </div>
-                  </div>
-                  <div className="flex-1 p-8 grid grid-cols-12 gap-6">
-                    <div className="col-span-3 space-y-4">
-                      <div className="h-10 bg-blue-600/10 rounded-xl" />
-                      <div className="h-10 bg-gray-100 rounded-xl" />
-                      <div className="h-10 bg-gray-100 rounded-xl" />
-                    </div>
-                    <div className="col-span-9 grid grid-cols-2 gap-6">
-                       <div className="h-32 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-center gap-2">
-                          <div className="w-20 h-2 bg-gray-100 rounded" />
-                          <div className="text-3xl font-black italic text-blue-600">429 Élèves</div>
-                       </div>
-                       <div className="h-32 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-center gap-2">
-                          <div className="w-20 h-2 bg-gray-100 rounded" />
-                          <div className="text-3xl font-black italic text-emerald-500">98% Paiements</div>
-                       </div>
-                       <div className="col-span-2 h-48 bg-white rounded-3xl border border-gray-100 p-6">
-                          <div className="w-full h-full bg-gray-50 rounded-2xl animate-pulse" />
-                       </div>
-                    </div>
-                  </div>
+                  ))}
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Approuvé par</p>
+                  <p className="text-xs font-bold text-gray-900">+45 Établissements</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, rotate: 5 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="flex-1 w-full lg:max-w-xl relative group perspective-1000"
+          >
+            {/* Interactive Illustration with Rocket */}
+            <div className="relative bg-white border-8 border-white rounded-[48px] shadow-3xl overflow-hidden aspect-[4/3] group-hover:shadow-blue-500/10 transition-all duration-700 flex items-center justify-center">
+               <div className="absolute inset-0 bg-blue-50/30 flex items-center justify-center">
+                  <motion.div
+                    animate={{ 
+                      y: [0, -20, 0],
+                      rotate: [0, 2, 0]
+                    }}
+                    transition={{ 
+                      duration: 4, 
+                      repeat: Infinity, 
+                      ease: "easeInOut" 
+                    }}
+                    className="relative"
+                  >
+                    <Rocket className="w-48 h-48 text-blue-600 drop-shadow-2xl" />
+                    <motion.div 
+                      animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.2, 1] }}
+                      transition={{ duration: 0.5, repeat: Infinity }}
+                      className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4 h-12 bg-gradient-to-t from-orange-500 to-transparent blur-sm rounded-full" 
+                    />
+                  </motion.div>
+               </div>
+               
+               {/* Floating Badges */}
+               <motion.div 
+                 animate={{ y: [0, -10, 0] }}
+                 transition={{ duration: 4, repeat: Infinity }}
+                 className="absolute top-12 -left-8 bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex items-center gap-4"
+               >
+                  <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black italic">!</div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Paiements</p>
+                    <p className="text-sm font-bold text-gray-900">+12 Nouveaux</p>
+                  </div>
+               </motion.div>
+
+               <motion.div 
+                 animate={{ y: [0, 10, 0] }}
+                 transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+                 className="absolute bottom-12 -right-8 bg-gray-900 p-6 rounded-[32px] shadow-2xl flex items-center gap-4 text-white"
+               >
+                  <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Filières</p>
+                    <p className="text-sm font-bold">Nexus OS v2.4</p>
+                  </div>
+               </motion.div>
+            </div>
           </motion.div>
         </div>
       </section>

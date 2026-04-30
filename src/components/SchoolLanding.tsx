@@ -17,7 +17,8 @@ import {
   Calendar,
   ChevronRight,
   ShieldCheck,
-  Star
+  Star,
+  Smartphone
 } from 'lucide-react';
 
 export const SchoolLanding = ({ onShowRequest }: { onShowRequest?: () => void }) => {
@@ -242,6 +243,61 @@ export const SchoolLanding = ({ onShowRequest }: { onShowRequest?: () => void })
                       <p className="text-sm font-bold text-gray-900 leading-relaxed truncate serif italic">{item.value}</p>
                    </div>
                  ))}
+              </div>
+           </div>
+        </section>
+
+        {/* Why this platform? Features for the community */}
+        <section className="px-6 py-24 bg-gray-50/50">
+           <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col lg:flex-row gap-16 items-center">
+                 <div className="flex-1 space-y-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/5 border border-blue-600/10 rounded-full">
+                       <ShieldCheck className="w-3 h-3 text-blue-600" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 italic">Plateforme Nexus</span>
+                    </div>
+                    <h2 className="text-4xl md:text-5xl font-display font-black tracking-tight text-gray-900 uppercase italic">
+                       Un Écosystème au <br />
+                       service de <span className="text-blue-600">tous.</span>
+                    </h2>
+                    <p className="text-gray-500 font-medium italic leading-relaxed">
+                       Notre établissement déploie l'infrastructure EducaSys pour digitaliser l'apprentissage et simplifier la communication entre tous les membres de notre communauté.
+                    </p>
+                    
+                    <div className="space-y-6">
+                       {[
+                         { t: "Portail Étudiant", d: "Notes, emplois du temps et ressources académiques accessibles 24/7.", i: GraduationCap, c: "blue" },
+                         { t: "Suivi Parents", d: "Notifications en temps réel sur les absences et les performances académiques.", i: Users, c: "emerald" },
+                         { t: "Efficacité Pédagogique", d: "Des outils modernes pour nos enseignants afin de mieux accompagner chaque élève.", i: Star, c: "amber" }
+                       ].map((item, i) => (
+                         <div key={i} className="flex gap-6 group">
+                            <div className={`w-14 h-14 rounded-2xl bg-${item.c}-50 flex items-center justify-center text-${item.c}-600 group-hover:scale-110 transition-transform`}>
+                               <item.i className="w-7 h-7" />
+                            </div>
+                            <div>
+                               <h4 className="text-lg font-black italic uppercase tracking-tight text-gray-900">{item.t}</h4>
+                               <p className="text-sm text-gray-400 font-medium italic">{item.d}</p>
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+                 
+                 <div className="flex-1 bg-white p-2 rounded-[48px] shadow-2xl border border-gray-50 overflow-hidden">
+                    <div className="bg-gray-50 rounded-[40px] p-12 flex flex-col items-center justify-center text-center gap-8">
+                       <div className="w-24 h-24 bg-white rounded-[32px] shadow-xl flex items-center justify-center">
+                          <Smartphone className="w-12 h-12 text-blue-600" />
+                       </div>
+                       <div className="space-y-2">
+                          <h3 className="text-2xl font-black italic uppercase tracking-tighter text-gray-900">Application Mobile</h3>
+                          <p className="text-gray-400 font-medium italic text-sm">Téléchargez l'application pour rester connecté à votre campus partout.</p>
+                       </div>
+                       <div className="flex gap-4">
+                          <div className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest cursor-not-allowed opacity-50">App Store</div>
+                          <div className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest cursor-not-allowed opacity-50">Google Play</div>
+                       </div>
+                    </div>
+                 </div>
               </div>
            </div>
         </section>
