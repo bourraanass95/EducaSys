@@ -25,15 +25,37 @@ const __dirname = path.dirname(__filename);
 
 console.log('Starting MIAGE Nexus ERP Backend...');
 
-// Load Firebase config
-const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+// Firebase configuration is handled inside startServer to remain robust
+// during serverless initialization.
 
 // Initialize Firebase Client SDK
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+let firebaseApp;
+let db: any;
 
-console.log(`Firebase Initialized for project: ${firebaseConfig.projectId}`);
+try {
+  // Try to load from file first (local dev)
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    firebaseApp = initializeApp(firebaseConfig);
+    console.log(`Firebase Initialized from file: ${firebaseConfig.projectId}`);
+  } else {
+    // Fallback to Environment Variables (Vercel Production)
+    const firebaseConfig = {
+      apiKey: process.env.VITE_FIREBASE_API_KEY,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.VITE_FIREBASE_APP_ID
+    };
+    firebaseApp = initializeApp(firebaseConfig);
+    console.log(`Firebase Initialized from Environment Variables: ${firebaseConfig.projectId}`);
+  }
+  db = getFirestore(firebaseApp);
+} catch (err) {
+  console.error("Firebase init error:", err);
+}
 
 async function wipeAllData() {
   console.log('🧹 Wiping all data from database...');
@@ -367,11 +389,21 @@ async function startServer() {
     app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server ready at http://localhost:${PORT}`);
-  });
+  if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server ready at http://localhost:${PORT}`);
+    });
+  }
+  
+  return app;
 }
 
-startServer().catch(err => {
-  console.error('CRITICAL STARTUP ERROR:', err);
-});
+export const appPromise = startServer();
+// For Vercel Serverless Functions
+const app = express();
+// This is a placeholder for Vercel, the actual app will be returned 
+// by the startServer promise and handled via Vercel's bridge.
+export default async (req: any, res: any) => {
+  const actualApp = await appPromise;
+  return actualApp(req, res);
+};
