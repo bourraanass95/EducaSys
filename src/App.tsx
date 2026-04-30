@@ -50,7 +50,11 @@ const SchoolLayout = ({
   profileMenuRef, 
   setShowCommandPalette 
 }: any) => {
-  if (!isAuthenticated) return <Navigate to={`/${subdomain}/login`} />;
+  if (!isAuthenticated) {
+    // Avoid double slash which can be interpreted as a protocol-relative URL
+    const loginTarget = subdomain && subdomain !== '' ? `/${subdomain}/login` : '/superadmincnx';
+    return <Navigate to={loginTarget} />;
+  }
   
   return (
     <div className="flex min-h-screen bg-brand-bg font-sans text-brand-text">
@@ -266,9 +270,23 @@ const SchoolPortal = ({
   profileMenuRef, 
   setShowCommandPalette 
 }: any) => {
-  const { subdomain } = useParams();
+  const { subdomain: pathSubdomain } = useParams();
+  const [subdomain, setSubdomain] = useState<string | null>(null);
   const [currentSchool, setCurrentSchool] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Detect subdomain from path or hostname
+    if (pathSubdomain) {
+      setSubdomain(pathSubdomain);
+    } else {
+      const hostname = window.location.hostname;
+      if (hostname !== 'localhost' && !hostname.endsWith('.vercel.app') && !hostname.endsWith('.run.app')) {
+        const parts = hostname.split('.');
+        if (parts.length >= 1) setSubdomain(parts[0]);
+      }
+    }
+  }, [pathSubdomain]);
 
   const fetchSchool = async () => {
     if (!subdomain) return;
@@ -283,7 +301,11 @@ const SchoolPortal = ({
   };
 
   useEffect(() => {
-    fetchSchool();
+    if (subdomain) {
+      fetchSchool();
+    } else {
+      setLoading(false);
+    }
   }, [subdomain]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 rounded-full border-4 border-blue-600 border-t-transparent"></div></div>;
@@ -327,6 +349,27 @@ const SchoolPortal = ({
       {renderSchoolContent(activeTab, activeRole, portalUser, handleUpdate)}
     </SchoolLayout>
   );
+};
+
+const RootRoute = ({ onShowRequest }: any) => {
+  const [subdomain, setSubdomain] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && !hostname.endsWith('.vercel.app') && !hostname.endsWith('.run.app')) {
+      const parts = hostname.split('.');
+      if (parts.length >= 1) {
+        const sub = parts[0];
+        if (sub !== 'www' && sub !== 'app') setSubdomain(sub);
+      }
+    }
+  }, []);
+
+  if (subdomain) {
+    return <Navigate to={`/${subdomain}`} replace />;
+  }
+
+  return <GlobalHome />;
 };
 
 export default function App() {
@@ -405,7 +448,7 @@ export default function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<GlobalHome />} />
+        <Route path="/" element={<RootRoute />} />
           
           {/* Super Admin Access */}
           <Route path="/superadmincnx" element={<SuperAdminLogin onLogin={handleLogin} />} />

@@ -9,13 +9,26 @@ interface LoginProps {
 }
 
 export const Login = ({ onLogin }: LoginProps) => {
-  const { subdomain } = useParams();
+  const { subdomain: pathSubdomain } = useParams();
+  const [subdomain, setSubdomain] = useState<string | null>(null);
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [school, setSchool] = useState<any>(null);
+
+  useEffect(() => {
+    if (pathSubdomain) {
+      setSubdomain(pathSubdomain);
+    } else {
+      const hostname = window.location.hostname;
+      if (hostname !== 'localhost' && !hostname.endsWith('.vercel.app') && !hostname.endsWith('.run.app')) {
+        const parts = hostname.split('.');
+        if (parts.length >= 1) setSubdomain(parts[0]);
+      }
+    }
+  }, [pathSubdomain]);
 
   useEffect(() => {
     if (subdomain) {

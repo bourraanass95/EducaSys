@@ -21,16 +21,36 @@ import {
 } from 'lucide-react';
 
 export const SchoolLanding = ({ onShowRequest }: { onShowRequest?: () => void }) => {
-  const { subdomain } = useParams();
+  const { subdomain: pathSubdomain } = useParams();
+  const [subdomain, setSubdomain] = useState<string | null>(null);
   const [school, setSchool] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (pathSubdomain) {
+      setSubdomain(pathSubdomain);
+    } else {
+      const hostname = window.location.hostname;
+      if (hostname !== 'localhost' && !hostname.endsWith('.vercel.app') && !hostname.endsWith('.run.app')) {
+        const parts = hostname.split('.');
+        if (parts.length >= 1) {
+          const sub = parts[0];
+          if (sub !== 'www' && sub !== 'app') setSubdomain(sub);
+        }
+      }
+    }
+  }, [pathSubdomain]);
+
+  useEffect(() => {
     const fetchSchool = async () => {
+      if (!subdomain) {
+        setLoading(false);
+        return;
+      }
       try {
-        const data = await api.getSchoolBySubdomain(subdomain || '');
+        const data = await api.getSchoolBySubdomain(subdomain);
         setSchool(data);
       } catch (e) {
         setError(true);
