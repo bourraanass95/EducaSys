@@ -735,7 +735,7 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-gray-900 tracking-tight italic uppercase">Analyse Stratégique Nexus</h3>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight italic uppercase">Analyse Stratégique EducaSys</h3>
                   <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Intelligence Artificielle Générative</p>
                 </div>
               </div>

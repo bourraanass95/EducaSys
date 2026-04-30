@@ -449,7 +449,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
     doc.text("RECU DE PAIEMENT", 20, 25);
     
     doc.setFontSize(10);
-    doc.text("NEXUS INFRASTRUCTURE - EDUCASYS GLOBAL", 140, 25);
+    doc.text("EDUCASYS INFRASTRUCTURE - GLOBAL", 140, 25);
 
     // Body
     doc.setTextColor(0, 0, 0);
@@ -471,7 +471,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
     doc.setFontSize(10);
     doc.setTextColor(107, 114, 128);
     const footerText = [
-      "Ce document fait office de preuve de paiement pour les services d'infrastructure Nexus.",
+      "Ce document fait office de preuve de paiement pour les services d'infrastructure EducaSys.",
       "Le paiement a été validé par le centre d'administration EDUCA SYS GLOBAL.",
       "Veuillez conserver ce reçu pour votre comptabilité."
     ];
@@ -483,7 +483,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
     // Footer
     doc.setFontSize(8);
     doc.text(`Généré le ${new Date().toLocaleString()}`, 20, 280);
-    doc.text("© 2026 Nexus Infrastructure. Tous droits réservés.", 130, 280);
+    doc.text("© 2026 EducaSys Infrastructure. Tous droits réservés.", 130, 280);
 
     doc.save(`Recu_Paiement_${payment.schoolName}_${payment.month}.pdf`);
   };
@@ -659,7 +659,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
           <div className="text-left">
             <div className="flex items-center gap-3 text-blue-600 mb-2">
                <Globe className="w-5 h-5 animate-pulse" />
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">Infrastructure Globale Nexus</span>
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">Infrastructure Globale EducaSys</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-black text-gray-900 uppercase italic tracking-tighter leading-none mb-2">
               Panel <span className="text-blue-600">Global</span>
@@ -1355,7 +1355,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                    <h2 className="text-3xl font-black uppercase italic tracking-tighter relative z-10">
                      {editingSchool ? 'Modifier' : 'Déployer'} <span className="text-blue-600">Instance</span>
                    </h2>
-                   <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2 relative z-10 italic">Nexus Orchestration Engine</p>
+                   <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2 relative z-10 italic">EducaSys Orchestration Engine</p>
                    
                    <button 
                      type="button"

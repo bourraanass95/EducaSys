@@ -194,7 +194,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
     // Header
     doc.setFontSize(22);
     doc.setTextColor(37, 99, 235); // Blue-600
-    doc.text('MIAGE NEXUS ERP', 105, 20, { align: 'center' });
+    doc.text('MIAGE EDUCASYS ERP', 105, 20, { align: 'center' });
     
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -245,7 +245,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
     doc.setFontSize(9);
     doc.setTextColor(150);
     doc.text('Ce document est généré informatiquement et fait office de pièce justificative.', 105, 280, { align: 'center' });
-    doc.text('© 2026 MIAGE NEXUS - Système de Gestion Intégré', 105, 285, { align: 'center' });
+    doc.text('© 2026 MIAGE EDUCASYS - Système de Gestion Intégré', 105, 285, { align: 'center' });
 
     doc.save(`facture_${invoice.id}.pdf`);
   };

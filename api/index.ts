@@ -23,7 +23,7 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('Starting MIAGE Nexus ERP Backend...');
+console.log('Starting MIAGE EducaSys ERP Backend...');
 
 // Firebase configuration is handled inside startServer to remain robust
 // during serverless initialization.
@@ -105,7 +105,7 @@ async function populateInitialData() {
 }
 
 async function createExpressApp() {
-  console.log('🚀 Starting Nexus ERP server...');
+  console.log('🚀 Starting EducaSys ERP server...');
   
   // Start population in background so we don't block server startup
   populateInitialData().catch(err => console.error('❌ Background population failed:', err));

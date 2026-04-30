@@ -575,7 +575,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
                   <h2 className="text-2xl font-black text-black italic uppercase tracking-tighter">
                     {editingStudent ? 'Éditer Étudiant' : 'Nouvel Étudiant'}
                   </h2>
-                  <p className="text-gray-400 text-xs font-bold uppercase tracking-widest italic">Nexus Academic Management</p>
+                  <p className="text-gray-400 text-xs font-bold uppercase tracking-widest italic">EducaSys Academic Management</p>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X className="w-6 h-6 text-gray-400" />

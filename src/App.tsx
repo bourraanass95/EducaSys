@@ -220,7 +220,7 @@ const SchoolLayout = ({
           </AnimatePresence>
         </div>
         <footer className="px-4 md:px-8 py-4 border-t border-gray-50/50 text-[10px] text-gray-400 flex flex-col sm:flex-row justify-between items-center bg-white gap-2">
-          <p className="font-bold italic">© 2026 {portalUser?.schoolName || 'EducaSys'} - Nexus Powered</p>
+          <p className="font-bold italic">© 2026 {portalUser?.schoolName || 'EducaSys'} - EducaSys Powered</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
               <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> 

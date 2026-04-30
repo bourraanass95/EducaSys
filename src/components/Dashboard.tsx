@@ -297,7 +297,7 @@ export const Dashboard = ({ user }: { user: any }) => {
              Informations
            </h3>
            <div className="space-y-4 h-full flex flex-col justify-center">
-              <p className="text-center text-sm text-gray-500 font-medium">Système de gestion MIAGE Nexus ERP.</p>
+              <p className="text-center text-sm text-gray-500 font-medium">Système de gestion MIAGE EducaSys ERP.</p>
               <p className="text-center text-[10px] text-gray-400 italic">Plateforme centralisée pour la gestion académique et administrative.</p>
            </div>
         </div>

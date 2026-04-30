@@ -296,7 +296,7 @@ export const GlobalHome = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Filières</p>
-                    <p className="text-sm font-bold">Nexus OS v2.4</p>
+                    <p className="text-sm font-bold">EducaSys OS v2.4</p>
                   </div>
                </motion.div>
             </div>
@@ -311,7 +311,7 @@ export const GlobalHome = () => {
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-600/5 border border-emerald-600/10 rounded-full mb-6">
                 <LayoutDashboard className="w-3 h-3 text-emerald-600" />
-                <span className="text-[10px] font-black tracking-[0.2em] uppercase text-emerald-600">L'écosystème Nexus</span>
+                <span className="text-[10px] font-black tracking-[0.2em] uppercase text-emerald-600">L'écosystème EducaSys</span>
               </div>
               <h2 className="text-4xl md:text-6xl font-display font-black tracking-tight mb-8 text-black leading-tight italic uppercase">
                 Au cœur de votre <span className="text-blue-600">Performance.</span>
@@ -463,7 +463,7 @@ export const GlobalHome = () => {
                  <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-gray-900 shadow-sm mb-6">
                     <Smartphone className="w-7 h-7" />
                  </div>
-                 <h3 className="text-3xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">Mobilité Nexus</h3>
+                 <h3 className="text-3xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">Mobilité EducaSys</h3>
                  <p className="text-gray-500 font-medium text-sm italic">Vos parents suivent les absences et les résultats de leurs enfants en temps réel sur mobile.</p>
               </div>
               <div className="flex-1 bg-white p-6 rounded-3xl border border-gray-100 shadow-inner -rotate-3 group-hover:rotate-0 transition-transform">
@@ -548,7 +548,7 @@ export const GlobalHome = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
              {[
                { q: "EducaSys a transformé notre façon de gérer les absences. Tout est centralisé et sécurisé.", a: "Directrice", s: "Lycée Ibn Khaldoun" },
-               { q: "Le tableau de bord Nexus nous donne une vision claire des performances dès le matin. Indispensable.", a: "Directeur Adjoint", s: "Groupe Scolaire Atlas" },
+               { q: "Le tableau de bord EducaSys nous donne une vision claire des performances dès le matin. Indispensable.", a: "Directeur Adjoint", s: "Groupe Scolaire Atlas" },
                { q: "L'installation a pris moins d'une heure. L'équipe a été très réactive pour la formation du personnel.", a: "Administrateur", s: "Collège Al Andalous" }
              ].map((t, i) => (
                <div key={i} className="p-8 bg-white glass-morphism rounded-[32px] italic border border-gray-100">
@@ -602,7 +602,7 @@ export const GlobalHome = () => {
             {[
               { year: 'Q3 2025', title: 'LMS Intégré', desc: 'Plateforme de cours interactifs avec correction IA automatique.' },
               { year: 'Q1 2026', title: 'Blockchain Diploma', desc: 'Certification infalsifiable des diplômes via la technologie Blockchain.' },
-              { year: 'Q4 2026', title: 'Nexus VR Campus', desc: 'Immersion totale en réalité virtuelle pour les Travaux Pratiques.' }
+              { year: 'Q4 2026', title: 'EducaSys VR Campus', desc: 'Immersion totale en réalité virtuelle pour les Travaux Pratiques.' }
             ].map((milestone, idx) => (
               <motion.div 
                 key={idx}

@@ -57,7 +57,7 @@ export const SuperAdminLogin = ({ onLogin }: SuperAdminLoginProps) => {
            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/10">
               <ShieldCheck className="w-8 h-8 text-white" />
            </div>
-           <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter">Nexus <span className="text-blue-500">Core</span></h1>
+           <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter">EducaSys <span className="text-blue-500">Core</span></h1>
            <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Global SaaS Administration</p>
         </div>
 

@@ -727,7 +727,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
             
             <div className="mt-8 bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden group">
                <div className="relative z-10">
-                  <p className="font-black italic uppercase text-lg mb-3 tracking-tighter">Nexus Analytics Summary</p>
+                  <p className="font-black italic uppercase text-lg mb-3 tracking-tighter">EducaSys Analytics Summary</p>
                   <p className="opacity-90 leading-relaxed text-sm font-medium">
                     {students.length > 0 ? (
                       `L'assiduité moyenne de la classe est de ${

@@ -127,7 +127,7 @@ export const Support3S = () => {
               <h4 className="flex items-center gap-2 text-amber-900 font-bold mb-2">
                  <AlertCircle className="w-5 h-5" /> Maintenance Système
               </h4>
-              <p className="text-xs text-amber-700 leading-relaxed">Le portail Nexus sera inaccessible ce dimanche de 02:00 à 04:00 pour une mise à jour des modules 3S.</p>
+              <p className="text-xs text-amber-700 leading-relaxed">Le portail EducaSys sera inaccessible ce dimanche de 02:00 à 04:00 pour une mise à jour des modules 3S.</p>
            </div>
         </div>
       </div>
