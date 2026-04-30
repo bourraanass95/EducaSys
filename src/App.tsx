@@ -32,6 +32,7 @@ import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-do
 import { GlobalHome } from './components/GlobalHome';
 import { SchoolLanding } from './components/SchoolLanding';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
+import { Documentation, Support, Privacy, CGU } from './components/StaticPages';
 import { NAVIGATION_SECTIONS } from './constants';
 
 const SchoolLayout = ({ 
@@ -458,6 +459,10 @@ export default function App() {
     <>
       <Routes>
         <Route path="/" element={<RootRoute />} />
+        <Route path="/documentation" element={<Documentation />} />
+        <Route path="/support" element={<Support />} />
+        <Route path="/confidentialite" element={<Privacy />} />
+        <Route path="/cgu" element={<CGU />} />
           
           {/* Super Admin Access */}
           <Route path="/superadmincnx" element={<SuperAdminLogin onLogin={handleLogin} />} />
