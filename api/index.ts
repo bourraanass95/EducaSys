@@ -418,7 +418,8 @@ async function createExpressApp() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (!process.env.VERCEL) {
+    // Serve static files only if not on Vercel (let Vercel handle static files natively)
     const distPath = path.join(process.cwd(), 'dist');
     console.log(`Serving static files from: ${distPath}`);
     
@@ -438,6 +439,8 @@ async function createExpressApp() {
         res.status(500).send(`Production build missing. Static folder expected at ${distPath}`);
       });
     }
+  } else {
+    console.log('Running on Vercel: Static files should be handled by vercel.json rewrites.');
   }
 
   return app;

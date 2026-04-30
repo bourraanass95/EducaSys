@@ -198,92 +198,258 @@ export const GlobalHome = () => {
       </AnimatePresence>
 
       {/* Hero */}
-      <section className="relative pt-44 pb-32 px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150vw] h-[1000px] bg-gradient-to-b from-blue-50 to-transparent -z-10 rounded-[100%]" />
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150vw] h-[1000px] bg-gradient-to-b from-blue-50/50 via-white to-transparent -z-10 rounded-[100%]" />
         
-        <div className="max-w-7xl mx-auto text-center">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
+            className="flex-1 text-center lg:text-left"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/5 border border-blue-600/10 rounded-full mb-8">
               <Sparkles className="w-3 h-3 text-blue-600" />
-              <span className="text-[10px] font-black tracking-[0.2em] uppercase text-blue-600">Standard de Point 2026</span>
+              <span className="text-[10px] font-black tracking-[0.2em] uppercase text-blue-600">Standard de Gestion 2026</span>
             </div>
-            <h1 className="text-5xl md:text-8xl font-display font-black tracking-tight leading-[0.9] mb-8 text-black transition-colors">
-              Gérez Votre École <br className="hidden md:block" /> 
-              Sans Stress 🚀
+            <h1 className="text-5xl md:text-7xl xl:text-8xl font-display font-black tracking-tight leading-[0.95] mb-8 text-black">
+              L'Infrastructure <br />
+              <span className="text-blue-600 italic">Intelligente</span> <br />
+              pour votre École.
             </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-black font-medium leading-relaxed mb-12 transition-colors">
-              La solution complète pour digitaliser votre établissement. Élèves, professeurs, notes et finances, tout est là 🏫✨
+            <p className="max-w-xl mx-auto lg:mx-0 text-lg md:text-xl text-gray-600 font-medium leading-relaxed mb-12">
+              Digitalisez l'intégralité de vos opérations en 24h. De la gestion financière aux bulletins, offrez à votre établissement l'excellence qu'il mérite. 🏫✨
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5">
               <button 
                 onClick={() => setShowRequestModal(true)}
-                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
               >
-                Démarrer Maintenant
+                Demander une Démo <ArrowRight className="w-5 h-5" />
               </button>
-              <button 
-                className="w-full sm:w-auto px-10 py-5 bg-white text-black border border-gray-100 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all shadow-sm"
-              >
-                Voir une Vidéo
-              </button>
+              <div className="flex items-center gap-4 px-6 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                <div className="flex -space-x-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
+                      <img src={`https://i.pravatar.cc/150?u=${i+20}`} alt="avatar" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Approuvé par</p>
+                  <p className="text-xs font-bold text-gray-900">+45 Établissements</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="flex-1 w-full lg:max-w-xl relative group perspective-1000"
+          >
+            {/* Interactive Dashboard Mockup */}
+            <div className="relative bg-white border-8 border-white rounded-[48px] shadow-3xl overflow-hidden aspect-[4/3] group-hover:shadow-blue-500/10 transition-all duration-700">
+               <div className="absolute inset-0 bg-gray-50 flex flex-col">
+                  {/* Mock Sidebar */}
+                  <div className="w-full h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6">
+                     <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                     </div>
+                     <div className="w-32 h-6 bg-gray-100 rounded-full animate-pulse" />
+                     <div className="w-10 h-10 bg-blue-50 rounded-xl" />
+                  </div>
+                  {/* Mock Content */}
+                  <div className="p-8 flex gap-6 h-full">
+                     <div className="flex-1 space-y-6">
+                        <div className="h-32 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-between">
+                           <div className="w-12 h-3 bg-gray-100 rounded" />
+                           <div className="text-3xl font-black italic text-blue-600 tracking-tight">4,829,000 DH</div>
+                           <div className="w-24 h-2 bg-emerald-50 rounded" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="h-24 bg-white rounded-3xl border border-gray-100 p-4 animate-pulse" />
+                           <div className="h-24 bg-white rounded-3xl border border-gray-100 p-4" />
+                        </div>
+                     </div>
+                     <div className="w-40 bg-white rounded-3xl border border-gray-100 p-6 space-y-4">
+                        <div className="w-full h-2 bg-gray-100 rounded" />
+                        <div className="w-full h-2 bg-gray-100 rounded" />
+                        <div className="w-3/4 h-2 bg-gray-100 rounded" />
+                        <div className="mt-8 space-y-3">
+                           {[1,2,3].map(i => (
+                             <div key={i} className="flex gap-2 items-center">
+                               <div className="w-6 h-6 rounded-lg bg-blue-50" />
+                               <div className="w-12 h-1.5 bg-gray-50 rounded" />
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
+               {/* Floating Badges */}
+               <motion.div 
+                 animate={{ y: [0, -10, 0] }}
+                 transition={{ duration: 4, repeat: Infinity }}
+                 className="absolute top-12 -left-8 bg-white p-6 rounded-[32px] shadow-2xl border border-gray-50 flex items-center gap-4"
+               >
+                  <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black italic">!</div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Paiements</p>
+                    <p className="text-sm font-bold text-gray-900">+12 Nouveaux</p>
+                  </div>
+               </motion.div>
+
+               <motion.div 
+                 animate={{ y: [0, 10, 0] }}
+                 transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+                 className="absolute bottom-12 -right-8 bg-black p-6 rounded-[32px] shadow-2xl flex items-center gap-4 text-white"
+               >
+                  <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Filières</p>
+                    <p className="text-sm font-bold">Nexus OS v2.0</p>
+                  </div>
+               </motion.div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <section className="py-20 border-y border-gray-50">
-         <div className="max-w-7xl mx-auto px-6 text-center">
-            <p className="text-[11px] font-black tracking-[0.3em] uppercase text-gray-400 mb-12 italic">Ils nous font confiance</p>
-            <div className="flex flex-wrap justify-center gap-x-16 gap-y-8 grayscale opacity-60 hover:opacity-100 transition-opacity">
-               {["Collège Al Andalous", "Lycée Ibn Khaldoun", "École Excellence Casablanca", "Groupe Atlas", "Institut Al Farabi"].map((name) => (
-                 <span key={name} className="text-lg font-display font-black tracking-tighter text-black whitespace-nowrap">{name.toUpperCase()}</span>
-               ))}
-            </div>
-         </div>
+      {/* Trust Bar - Animated Marquee */}
+      <section className="py-20 border-y border-gray-50 overflow-hidden bg-gray-50/30">
+        <div className="max-w-7xl mx-auto px-6 overflow-hidden relative">
+          <p className="text-[11px] font-black tracking-[0.3em] uppercase text-gray-400 mb-12 text-center italic">Infrastructure adoptée par les leaders</p>
+          <div className="flex animate-marquee gap-20 items-center justify-center overflow-hidden">
+             {["Collège Al Andalous", "Lycée Ibn Khaldoun", "École Excellence", "Groupe Atlas", "Institut Al Farabi"].map((name) => (
+               <span key={name} className="text-2xl font-display font-black tracking-tighter text-gray-300 whitespace-nowrap hover:text-blue-600 transition-colors cursor-default uppercase">{name}</span>
+             ))}
+             {["Collège Al Andalous", "Lycée Ibn Khaldoun", "École Excellence", "Groupe Atlas", "Institut Al Farabi"].map((name) => (
+               <span key={name + '2'} className="text-2xl font-display font-black tracking-tighter text-gray-300 whitespace-nowrap hover:text-blue-600 transition-colors cursor-default uppercase">{name}</span>
+             ))}
+          </div>
+        </div>
       </section>
 
-      {/* Results Section */}
-
-      {/* Features Grid */}
+      {/* Bento Feature Grid */}
       <section id="fonctionnalités" className="py-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-display font-black tracking-tight mb-6 text-black">Tout ce dont vous avez besoin ⚡️</h2>
-            <p className="text-gray-600 max-w-xl mx-auto font-medium">Une suite d'outils puissants pour piloter votre école comme un pro.</p>
+          <div className="text-center mb-24">
+            <h2 className="text-5xl md:text-7xl font-display font-black tracking-tighter mb-8 text-black uppercase italic">Un Écosystème <br /> Sans Limites.</h2>
+            <p className="text-gray-500 max-w-xl mx-auto font-medium text-lg italic">Oubliez les logiciels complexes. EducaSys est intuitif, rapide et diablement efficace.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={Layout} 
-              title="Multi-écoles 🏢" 
-              description="Chaque école dispose d'un espace isolé et sécurisé. Parfait pour les groupes scolaires." 
-            />
-            <FeatureCard 
-              icon={Clock} 
-              title="Absences en direct ⏱️" 
-              description="Suivez les présences en temps réel." 
-            />
-            <FeatureCard 
-              icon={Trophy} 
-              title="Notes & Bulletins 📊" 
-              description="Calculez les moyennes instantanément et générez des bulletins professionnels en un clic." 
-            />
-            <FeatureCard 
-              icon={Smartphone} 
-              title="Mobile First 📱" 
-              description="Accédez à votre campus depuis votre smartphone, tablette ou ordinateur. Partout, tout le temps." 
-            />
-            <FeatureCard 
-              icon={ShieldCheck} 
-              title="Sécurité Totale 🔐" 
-              description="Vos données sont protégées par les plus hauts standards de sécurité." 
-            />
+          <div className="grid grid-cols-1 md:grid-cols-6 md:grid-rows-2 gap-8 h-auto">
+            {/* Main Feature - Large */}
+            <motion.div 
+              whileHover={{ y: -10 }}
+              className="md:col-span-3 md:row-span-1 p-10 bg-gray-900 rounded-[48px] text-white flex flex-col justify-between group overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] group-hover:bg-blue-600/40 transition-all" />
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-2xl shadow-blue-500/40">
+                  <BarChart3 className="w-8 h-8" />
+                </div>
+                <h3 className="text-4xl font-black italic tracking-tighter mb-4 uppercase">Finance <br /> Master Pro</h3>
+                <p className="text-gray-400 text-lg font-medium leading-relaxed max-w-xs italic">Encaissements, restes à payer, facturation automatique. Gardez le contrôle total sur votre cashflow.</p>
+              </div>
+              <div className="mt-12 flex items-center gap-4 border-t border-white/5 pt-8">
+                 <div className="px-4 py-2 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-400">Automatisation 100%</div>
+              </div>
+            </motion.div>
+
+            {/* Feature 2 - Small */}
+            <motion.div 
+               whileHover={{ y: -10 }}
+               className="md:col-span-3 md:row-span-1 p-10 bg-white border border-gray-100 rounded-[48px] shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
+            >
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-8">
+                 <Trophy className="w-8 h-8" />
+              </div>
+              <h3 className="text-3xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">Bulletins & Exams</h3>
+              <p className="text-gray-500 font-medium italic">Génération instantanée de bulletins PDF sécurisés. Algorithme de calcul de moyennes certifié.</p>
+              <ArrowRight className="absolute bottom-10 right-10 w-8 h-8 text-gray-200 group-hover:text-blue-600 group-hover:translate-x-2 transition-all" />
+            </motion.div>
+
+            {/* Feature 3 - Small */}
+            <motion.div 
+               whileHover={{ y: -10 }}
+               className="md:col-span-2 md:row-span-1 p-10 bg-blue-600 rounded-[48px] text-white group"
+            >
+              <Users className="w-12 h-12 mb-8 text-blue-200" />
+              <h3 className="text-2xl font-black italic tracking-tight mb-4 uppercase">Staff & RH</h3>
+              <p className="text-blue-100 font-medium text-sm italic">Gérez vos professeurs, leurs emplois du temps et leur performance en quelques clics.</p>
+            </motion.div>
+
+            {/* Feature 4 - Horizontal Wide */}
+            <motion.div 
+               whileHover={{ y: -10 }}
+               className="md:col-span-4 md:row-span-1 p-10 bg-gray-50 rounded-[48px] flex flex-col md:flex-row items-center gap-10 group"
+            >
+              <div className="flex-1">
+                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-gray-900 shadow-sm mb-6">
+                    <Smartphone className="w-7 h-7" />
+                 </div>
+                 <h3 className="text-3xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">Mobilité Nexus</h3>
+                 <p className="text-gray-500 font-medium text-sm italic">Vos parents suivent les absences et les résultats de leurs enfants en temps réel sur mobile.</p>
+              </div>
+              <div className="flex-1 bg-white p-6 rounded-3xl border border-gray-100 shadow-inner -rotate-3 group-hover:rotate-0 transition-transform">
+                 <div className="h-4 bg-gray-100 w-32 rounded mb-4" />
+                 <div className="h-40 bg-blue-50 rounded-2xl" />
+              </div>
+            </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ROI & Impact */}
+      <section className="py-32 bg-gray-900 text-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+              <div>
+                 <h2 className="text-5xl md:text-6xl font-display font-black italic tracking-tighter leading-none mb-12 uppercase">Révolutionnez <br /> votre Productivité.</h2>
+                 <div className="space-y-12">
+                     <div className="flex gap-6">
+                        <div className="shrink-0 w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-black font-black text-xl italic">01</div>
+                        <div>
+                           <h4 className="text-xl font-black italic uppercase mb-2">Gain de Temps : 15h / semaine</h4>
+                           <p className="text-gray-400 font-medium italic">Automatisez les rappels de paiement et la génération des bulletins pour libérer votre secrétariat.</p>
+                        </div>
+                     </div>
+                     <div className="flex gap-6">
+                        <div className="shrink-0 w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-black font-black text-xl italic">02</div>
+                        <div>
+                           <h4 className="text-xl font-black italic uppercase mb-2">Multi-Campus Centralisé</h4>
+                           <p className="text-gray-400 font-medium italic">Un seul compte pour piloter tous vos établissements, où qu'ils soient.</p>
+                        </div>
+                     </div>
+                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-8">
+                 <div className="p-10 bg-white/5 border border-white/10 rounded-[48px] text-center">
+                    <p className="text-6xl font-display font-black italic text-blue-500 mb-4 tracking-tighter">-45%</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">D'Inpayés</p>
+                 </div>
+                 <div className="p-10 bg-white/5 border border-white/10 rounded-[48px] text-center mt-12">
+                    <p className="text-6xl font-display font-black italic text-emerald-500 mb-4 tracking-tighter">Zéro</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Erreur Bulletin</p>
+                 </div>
+                 <div className="p-10 bg-white/5 border border-white/10 rounded-[48px] text-center">
+                    <p className="text-6xl font-display font-black italic text-amber-500 mb-4 tracking-tighter">24h</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Mise en place</p>
+                 </div>
+                 <div className="p-10 bg-white/5 border border-white/10 rounded-[48px] text-center mt-12">
+                    <p className="text-6xl font-display font-black italic text-white mb-4 tracking-tighter">∞LLM</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Support IA</p>
+                 </div>
+              </div>
+           </div>
         </div>
       </section>
 

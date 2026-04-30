@@ -214,12 +214,12 @@ export const SchoolLanding = ({ onShowRequest }: { onShowRequest?: () => void })
                    { icon: Mail, label: "Email", value: school.email, color: "orange" },
                    { icon: Calendar, label: "Rentrée", value: "Septembre 2026", color: "indigo" }
                  ].map((item, i) => (
-                   <div key={i} className="group p-8 bg-gray-50/50 hover:bg-white border border-transparent hover:border-gray-100 rounded-[32px] transition-all hover:shadow-xl shadow-black/5">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 bg-${item.color}-100 text-${item.color}-600`}>
+                   <div key={i} className="group p-8 bg-gray-50/30 hover:bg-white border border-transparent hover:border-gray-100 rounded-[32px] transition-all hover:shadow-xl shadow-black/5">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 bg-${item.color}-100 text-${item.color}-600 ring-8 ring-white shadow-sm`}>
                          <item.icon className="w-6 h-6" />
                       </div>
                       <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest italic mb-2">{item.label}</p>
-                      <p className="text-sm font-bold text-gray-900 leading-relaxed truncate">{item.value}</p>
+                      <p className="text-sm font-bold text-gray-900 leading-relaxed truncate serif italic">{item.value}</p>
                    </div>
                  ))}
               </div>

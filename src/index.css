@@ -37,6 +37,21 @@
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
 .glass-morphism {
   background: var(--brand-glass);
   backdrop-filter: blur(10px);
