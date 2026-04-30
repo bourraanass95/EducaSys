@@ -32,35 +32,40 @@ console.log('Starting MIAGE Nexus ERP Backend...');
 let firebaseApp: any;
 let db: any;
 
-function getFirebaseConfig() {
+function getDb() {
+  if (db) return db;
+  
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  let config;
   if (fs.existsSync(configPath)) {
-    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } else {
+    config = {
+      apiKey: process.env.VITE_FIREBASE_API_KEY,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.VITE_FIREBASE_APP_ID,
+      firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)'
+    };
   }
-  return {
-    apiKey: process.env.VITE_FIREBASE_API_KEY,
-    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.VITE_FIREBASE_APP_ID,
-    firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)'
-  };
+  
+  firebaseApp = initializeApp(config);
+  db = getFirestore(firebaseApp, config.firestoreDatabaseId || '(default)');
+  console.log(`Firebase Initialized for project: ${config.projectId}`);
+  return db;
 }
 
-const config = getFirebaseConfig();
-firebaseApp = initializeApp(config);
-db = getFirestore(firebaseApp, config.firestoreDatabaseId || '(default)');
-console.log(`Firebase Initialized for project: ${config.projectId} (DB: ${config.firestoreDatabaseId || '(default)'})`);
-
 async function wipeAllData() {
+  const database = getDb();
   console.log('🧹 Wiping all data from database...');
   const collectionsToWipe = ['users', 'filieres', 'staff', 'invoices', 'structures', 'schedules', 'attendance', 'audit_logs', 'schools', 'notifications', 'internships', 'books'];
   try {
     for (const colName of collectionsToWipe) {
-      const snapshot = await getDocs(collection(db, colName));
+      const snapshot = await getDocs(collection(database, colName));
       for (const docSnap of snapshot.docs) {
-        await deleteDoc(doc(db, colName, docSnap.id));
+        await deleteDoc(doc(database, colName, docSnap.id));
       }
       console.log(`✅ Cleared collection: ${colName}`);
     }
@@ -72,13 +77,14 @@ async function wipeAllData() {
 }
 
 async function populateInitialData() {
-  const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', 'anassbourra.1995@gmail.com')));
+  const database = getDb();
+  const usersSnap = await getDocs(query(collection(database, 'users'), where('email', '==', 'anassbourra.1995@gmail.com')));
   if (!usersSnap.empty) return;
 
   console.log('🌱 Populating initial SaaS data (Super Admin Only)...');
   
   // Global Super Admin
-  await addDoc(collection(db, 'users'), {
+  await addDoc(collection(database, 'users'), {
     email: 'anassbourra.1995@gmail.com',
     password: 'admin',
     name: 'Anass Bourra',
@@ -90,7 +96,7 @@ async function populateInitialData() {
   console.log('✅ Initial data populated!');
 }
 
-async function startServer() {
+async function createExpressApp() {
   console.log('🚀 Starting Nexus ERP server...');
   await populateInitialData();
   
@@ -133,7 +139,7 @@ async function startServer() {
     try {
       // 1. Try "users" collection (Primary)
       // Check by email (case-insensitive) or identifiant
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const usersSnap = await getDocs(collection(getDb(), 'users'));
       const docUser = usersSnap.docs.find(d => {
         const data = d.data();
         return (data.email?.toLowerCase() === identifiantLower) || (data.identifiant === identifiant);
@@ -150,7 +156,7 @@ async function startServer() {
         console.log('User authenticated from "users" collection');
         let schoolData = null;
         if (userData.schoolId) {
-          const sSnap = await getDoc(doc(db, 'schools', userData.schoolId));
+          const sSnap = await getDoc(doc(getDb(), 'schools', userData.schoolId));
           if (sSnap.exists()) schoolData = sSnap.id; // Just store ID for reference if needed
         }
         
@@ -174,7 +180,7 @@ async function startServer() {
       }
       
       // 2. Try "staff" collection
-      const staffSnap = await getDocs(collection(db, 'staff'));
+      const staffSnap = await getDocs(collection(getDb(), 'staff'));
       const docStaff = staffSnap.docs.find(d => {
         const data = d.data();
         return (data.email?.toLowerCase() === identifiantLower) || (data.identifiant === identifiant);
@@ -220,13 +226,13 @@ async function startServer() {
       let uQuery, sQuery, iQuery;
       
       if (schoolId) {
-        uQuery = query(collection(db, 'users'), where('schoolId', '==', schoolId), where('role', '==', 'Student'));
-        sQuery = query(collection(db, 'staff'), where('schoolId', '==', schoolId));
-        iQuery = query(collection(db, 'invoices'), where('schoolId', '==', schoolId), where('status', '==', 'Paid'));
+        uQuery = query(collection(getDb(), 'users'), where('schoolId', '==', schoolId), where('role', '==', 'Student'));
+        sQuery = query(collection(getDb(), 'staff'), where('schoolId', '==', schoolId));
+        iQuery = query(collection(getDb(), 'invoices'), where('schoolId', '==', schoolId), where('status', '==', 'Paid'));
       } else {
-        uQuery = query(collection(db, 'users'), where('role', '==', 'Student'));
-        sQuery = collection(db, 'staff');
-        iQuery = query(collection(db, 'invoices'), where('status', '==', 'Paid'));
+        uQuery = query(collection(getDb(), 'users'), where('role', '==', 'Student'));
+        sQuery = collection(getDb(), 'staff');
+        iQuery = query(collection(getDb(), 'invoices'), where('status', '==', 'Paid'));
       }
 
       const [uSnap, sSnap, iSnap] = await Promise.all([
@@ -258,7 +264,7 @@ async function startServer() {
   // Generic CRUD with multi-tenant filtering
   app.get('/api/schools/by-subdomain/:subdomain', async (req, res) => {
     try {
-      const q = query(collection(db, 'schools'), where('subdomain', '==', req.params.subdomain), limit(1));
+      const q = query(collection(getDb(), 'schools'), where('subdomain', '==', req.params.subdomain), limit(1));
       const snap = await getDocs(q);
       if (snap.empty) return res.status(404).json({ error: 'School not found' });
       const school = snap.docs[0];
@@ -275,9 +281,9 @@ async function startServer() {
       let q;
       
       if (schoolId && colName !== 'schools') {
-        q = query(collection(db, colName), where('schoolId', '==', schoolId));
+        q = query(collection(getDb(), colName), where('schoolId', '==', schoolId));
       } else {
-        q = collection(db, colName);
+        q = collection(getDb(), colName);
       }
       
       const snap = await getDocs(q);
@@ -297,13 +303,13 @@ async function startServer() {
       const { id, ...data } = req.body;
       if (id) {
         // Use setDoc to preserve ID (useful for restoration)
-        await setDoc(doc(db, req.params.collection, id), {
+        await setDoc(doc(getDb(), req.params.collection, id), {
           ...data,
           updatedAt: new Date().toISOString()
         });
         res.status(201).json({ id, ...data });
       } else {
-        const docRef = await addDoc(collection(db, req.params.collection), {
+        const docRef = await addDoc(collection(getDb(), req.params.collection), {
           ...data,
           createdAt: new Date().toISOString()
         });
@@ -317,7 +323,7 @@ async function startServer() {
 
   app.put('/api/:collection/:id', async (req, res) => {
     try {
-      const dRef = doc(db, req.params.collection, req.params.id);
+      const dRef = doc(getDb(), req.params.collection, req.params.id);
       await setDoc(dRef, { ...req.body, updatedAt: new Date().toISOString() }, { merge: true });
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
@@ -329,7 +335,7 @@ async function startServer() {
   app.patch('/api/:collection/:id', async (req, res) => {
     try {
       console.log('PATCH request:', req.params.collection, req.params.id, Object.keys(req.body));
-      const dRef = doc(db, req.params.collection, req.params.id);
+      const dRef = doc(getDb(), req.params.collection, req.params.id);
       await setDoc(dRef, { ...req.body, updatedAt: new Date().toISOString() }, { merge: true });
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
@@ -354,9 +360,9 @@ async function startServer() {
         const subColls = ['users', 'staff', 'invoices', 'filieres', 'structures', 'schedules', 'attendance', 'notifications', 'internships'];
         try {
           for (const sub of subColls) {
-            const snap = await getDocs(query(collection(db, sub), where('schoolId', '==', id)));
+            const snap = await getDocs(query(collection(getDb(), sub), where('schoolId', '==', id)));
             for (const docSnap of snap.docs) {
-              await deleteDoc(doc(db, sub, docSnap.id));
+              await deleteDoc(doc(getDb(), sub, docSnap.id));
             }
           }
           console.log(`✅ Cascade delete completed for school ${id}`);
@@ -394,12 +400,19 @@ async function startServer() {
   return app;
 }
 
-export const appPromise = startServer();
-// For Vercel Serverless Functions
-const app = express();
-// This is a placeholder for Vercel, the actual app will be returned 
-// by the startServer promise and handled via Vercel's bridge.
+const appPromise = createExpressApp();
+
 export default async (req: any, res: any) => {
-  const actualApp = await appPromise;
-  return actualApp(req, res);
+  const app = await appPromise;
+  return app(req, res);
 };
+
+// Local dev server
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  appPromise.then(app => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Dev server running on http://localhost:${PORT}`);
+    });
+  });
+}
