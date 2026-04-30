@@ -198,132 +198,151 @@ export const GlobalHome = () => {
       </AnimatePresence>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150vw] h-[1000px] bg-gradient-to-b from-blue-50/50 via-white to-transparent -z-10 rounded-[100%]" />
+      <section className="relative pt-44 pb-32 px-6">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150vw] h-[1000px] bg-gradient-to-b from-blue-50 to-transparent -z-10 rounded-[100%]" />
         
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+        <div className="max-w-7xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="flex-1 text-center lg:text-left"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/5 border border-blue-600/10 rounded-full mb-8">
               <Sparkles className="w-3 h-3 text-blue-600" />
               <span className="text-[10px] font-black tracking-[0.2em] uppercase text-blue-600">Standard de Gestion 2026</span>
             </div>
-            <h1 className="text-5xl md:text-7xl xl:text-8xl font-display font-black tracking-tight leading-[0.95] mb-8 text-black">
-              L'Infrastructure <br />
-              <span className="text-blue-600 italic">Intelligente</span> <br />
-              pour votre École.
+            <h1 className="text-6xl md:text-8xl font-display font-black tracking-tight leading-[0.9] mb-8 text-black transition-colors">
+              Gérez Votre École <br className="hidden md:block" /> 
+              Sans Stress 🚀
             </h1>
-            <p className="max-w-xl mx-auto lg:mx-0 text-lg md:text-xl text-gray-600 font-medium leading-relaxed mb-12">
-              Digitalisez l'intégralité de vos opérations en 24h. De la gestion financière aux bulletins, offrez à votre établissement l'excellence qu'il mérite. 🏫✨
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-black font-medium leading-relaxed mb-12 transition-colors">
+              La solution complète pour digitaliser votre établissement. Élèves, professeurs, notes et finances, tout est là pour vous faire gagner du temps 🏫✨
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <button 
                 onClick={() => setShowRequestModal(true)}
-                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95"
               >
-                Demander une Démo <ArrowRight className="w-5 h-5" />
+                Démarrer Maintenant
               </button>
-              <div className="flex items-center gap-4 px-6 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                <div className="flex -space-x-2">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
-                      <img src={`https://i.pravatar.cc/150?u=${i+20}`} alt="avatar" className="w-full h-full object-cover" />
+              <button 
+                onClick={() => {
+                  const el = document.getElementById('ecosysteme');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto px-10 py-5 bg-white text-black border border-gray-100 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                Découvrir Nexus <ArrowRight className="w-5 h-5 text-blue-600" />
+              </button>
+            </div>
+
+            {/* Dashboard Preview Overlay */}
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mt-20 relative max-w-5xl mx-auto"
+            >
+              <div className="relative bg-white rounded-[40px] shadow-3xl border-8 border-white overflow-hidden aspect-[16/9]">
+                <div className="absolute inset-0 bg-gray-50 flex flex-col">
+                  <div className="h-12 bg-white border-b border-gray-100 flex items-center px-4 gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                     </div>
-                  ))}
-                </div>
-                <div className="text-left">
-                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Approuvé par</p>
-                  <p className="text-xs font-bold text-gray-900">+45 Établissements</p>
+                  </div>
+                  <div className="flex-1 p-8 grid grid-cols-12 gap-6">
+                    <div className="col-span-3 space-y-4">
+                      <div className="h-10 bg-blue-600/10 rounded-xl" />
+                      <div className="h-10 bg-gray-100 rounded-xl" />
+                      <div className="h-10 bg-gray-100 rounded-xl" />
+                    </div>
+                    <div className="col-span-9 grid grid-cols-2 gap-6">
+                       <div className="h-32 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-center gap-2">
+                          <div className="w-20 h-2 bg-gray-100 rounded" />
+                          <div className="text-3xl font-black italic text-blue-600">429 Élèves</div>
+                       </div>
+                       <div className="h-32 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-center gap-2">
+                          <div className="w-20 h-2 bg-gray-100 rounded" />
+                          <div className="text-3xl font-black italic text-emerald-500">98% Paiements</div>
+                       </div>
+                       <div className="col-span-2 h-48 bg-white rounded-3xl border border-gray-100 p-6">
+                          <div className="w-full h-full bg-gray-50 rounded-2xl animate-pulse" />
+                       </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="flex-1 w-full lg:max-w-xl relative group perspective-1000"
-          >
-            {/* Interactive Dashboard Mockup */}
-            <div className="relative bg-white border-8 border-white rounded-[48px] shadow-3xl overflow-hidden aspect-[4/3] group-hover:shadow-blue-500/10 transition-all duration-700">
-               <div className="absolute inset-0 bg-gray-50 flex flex-col">
-                  {/* Mock Sidebar */}
-                  <div className="w-full h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6">
-                     <div className="flex gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                     </div>
-                     <div className="w-32 h-6 bg-gray-100 rounded-full animate-pulse" />
-                     <div className="w-10 h-10 bg-blue-50 rounded-xl" />
-                  </div>
-                  {/* Mock Content */}
-                  <div className="p-8 flex gap-6 h-full">
-                     <div className="flex-1 space-y-6">
-                        <div className="h-32 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-between">
-                           <div className="w-12 h-3 bg-gray-100 rounded" />
-                           <div className="text-3xl font-black italic text-blue-600 tracking-tight">4,829,000 DH</div>
-                           <div className="w-24 h-2 bg-emerald-50 rounded" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                           <div className="h-24 bg-white rounded-3xl border border-gray-100 p-4 animate-pulse" />
-                           <div className="h-24 bg-white rounded-3xl border border-gray-100 p-4" />
-                        </div>
-                     </div>
-                     <div className="w-40 bg-white rounded-3xl border border-gray-100 p-6 space-y-4">
-                        <div className="w-full h-2 bg-gray-100 rounded" />
-                        <div className="w-full h-2 bg-gray-100 rounded" />
-                        <div className="w-3/4 h-2 bg-gray-100 rounded" />
-                        <div className="mt-8 space-y-3">
-                           {[1,2,3].map(i => (
-                             <div key={i} className="flex gap-2 items-center">
-                               <div className="w-6 h-6 rounded-lg bg-blue-50" />
-                               <div className="w-12 h-1.5 bg-gray-50 rounded" />
-                             </div>
-                           ))}
-                        </div>
-                     </div>
-                  </div>
-               </div>
-               
-               {/* Floating Badges */}
-               <motion.div 
-                 animate={{ y: [0, -10, 0] }}
-                 transition={{ duration: 4, repeat: Infinity }}
-                 className="absolute top-12 -left-8 bg-white p-6 rounded-[32px] shadow-2xl border border-gray-50 flex items-center gap-4"
-               >
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black italic">!</div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Paiements</p>
-                    <p className="text-sm font-bold text-gray-900">+12 Nouveaux</p>
-                  </div>
-               </motion.div>
-
-               <motion.div 
-                 animate={{ y: [0, 10, 0] }}
-                 transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-                 className="absolute bottom-12 -right-8 bg-black p-6 rounded-[32px] shadow-2xl flex items-center gap-4 text-white"
-               >
-                  <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Filières</p>
-                    <p className="text-sm font-bold">Nexus OS v2.0</p>
-                  </div>
-               </motion.div>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
+      {/* Ecosystem Section */}
+      <section id="ecosysteme" className="py-32 px-6 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-16 items-center">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-600/5 border border-emerald-600/10 rounded-full mb-6">
+                <LayoutDashboard className="w-3 h-3 text-emerald-600" />
+                <span className="text-[10px] font-black tracking-[0.2em] uppercase text-emerald-600">L'écosystème Nexus</span>
+              </div>
+              <h2 className="text-4xl md:text-6xl font-display font-black tracking-tight mb-8 text-black leading-tight italic uppercase">
+                Au cœur de votre <span className="text-blue-600">Performance.</span>
+              </h2>
+              <p className="text-gray-500 text-lg font-medium italic mb-12">
+                EducaSys n'est pas qu'un outil de saisie, c'est le moteur de votre établissement qui connecte tous les départements.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {[
+                  { icon: BarChart3, t: "Finance & Facturation", d: "Gestion des mensualités, rappels automatiques et suivi des impayés.", c: "blue" },
+                  { icon: BookOpen, t: "Pédagogie & Notes", d: "Bulletins instantanés, calcul de moyennes et suivi du programme.", c: "emerald" },
+                  { icon: Users, t: "RH & Enseignants", d: "Emplois du temps, pointage et gestion des salaires.", c: "amber" },
+                  { icon: Smartphone, t: "Espace Parents", d: "Communication directe via mobile pour les notes et absences.", c: "rose" }
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-4 p-4 rounded-3xl hover:bg-gray-50 transition-colors">
+                    <div className={`shrink-0 w-12 h-12 rounded-2xl bg-${item.c}-50 flex items-center justify-center text-${item.c}-600`}>
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-sm uppercase italic tracking-tight">{item.t}</h4>
+                      <p className="text-xs text-gray-500 mt-1 italic">{item.d}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex-1 relative">
+               <div className="w-full aspect-square bg-blue-50 rounded-[64px] flex items-center justify-center p-12 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+                  <div className="relative z-10 w-full aspect-square bg-white shadow-2xl rounded-[48px] border border-gray-100 p-8 flex flex-col justify-between transform group-hover:scale-105 transition-transform duration-500">
+                     <div className="flex justify-between items-center">
+                        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black italic">E</div>
+                        <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">Connecté</div>
+                     </div>
+                     <div className="space-y-6">
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Trafic du jour</p>
+                           <div className="h-4 w-full bg-gray-50 rounded-full overflow-hidden">
+                              <motion.div initial={{ width: 0 }} whileInView={{ width: '85%' }} className="h-full bg-blue-600" />
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                           {[1,2,3].map(i => <div key={i} className="h-12 bg-gray-50 rounded-xl animate-pulse" />)}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Trust Bar - Animated Marquee */}
-      <section className="py-20 border-y border-gray-50 overflow-hidden bg-gray-50/30">
+      <section className="py-20 border-y border-gray-50 overflow-hidden bg-gray-50/10">
         <div className="max-w-7xl mx-auto px-6 overflow-hidden relative">
           <p className="text-[11px] font-black tracking-[0.3em] uppercase text-gray-400 mb-12 text-center italic">Infrastructure adoptée par les leaders</p>
           <div className="flex animate-marquee gap-20 items-center justify-center overflow-hidden">
@@ -334,6 +353,29 @@ export const GlobalHome = () => {
                <span key={name + '2'} className="text-2xl font-display font-black tracking-tighter text-gray-300 whitespace-nowrap hover:text-blue-600 transition-colors cursor-default uppercase">{name}</span>
              ))}
           </div>
+        </div>
+      </section>
+
+      {/* How it helps - New Detailed Section */}
+      <section className="py-32 px-6">
+        <div className="max-w-4xl mx-auto text-center mb-20">
+          <h2 className="text-4xl md:text-6xl font-display font-black italic tracking-tighter mb-8 uppercase">Pourquoi Choisir <span className="text-blue-600">EducaSys ?</span></h2>
+          <p className="text-gray-500 text-lg font-medium italic">Nous résolvons les problèmes critiques que rencontrent les établissements chaque jour.</p>
+        </div>
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-100 border border-gray-100 rounded-[48px] overflow-hidden">
+           {[
+             { t: "Fini les Impayés", d: "Notre système envoie des rappels automatiques par SMS/Email, réduisant le taux d'impayés de 45% dès le premier semestre.", i: Zap, c: "text-amber-500" },
+             { t: "Bulletins Sans Erreurs", d: "Les calculs de moyennes et de rangs sont automatisés. Plus d'erreurs humaines, plus de réclamations de parents.", i: CheckCircle2, c: "text-emerald-500" },
+             { t: "Sécurité de vos Données", d: "Vos données sont hébergées sur des serveurs sécurisés avec des sauvegardes quotidiennes automatiques. Zéro risque de perte.", i: ShieldCheck, c: "text-blue-600" },
+             { t: "Support de Proximité", d: "Notre équipe est basée au Maroc. Un conseiller dédié vous accompagne physiquement pour la mise en place.", i: Briefcase, c: "text-gray-900" }
+           ].map((reason, i) => (
+             <div key={i} className="p-12 bg-white flex flex-col gap-6 hover:bg-blue-50/30 transition-colors">
+                <reason.i className={`w-10 h-10 ${reason.c}`} />
+                <h3 className="text-2xl font-black italic uppercase tracking-tighter">{reason.t}</h3>
+                <p className="text-gray-500 font-medium italic leading-relaxed">{reason.d}</p>
+             </div>
+           ))}
         </div>
       </section>
 
