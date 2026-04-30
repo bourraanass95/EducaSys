@@ -98,7 +98,9 @@ async function populateInitialData() {
 
 async function createExpressApp() {
   console.log('🚀 Starting Nexus ERP server...');
-  await populateInitialData();
+  
+  // Start population in background so we don't block server startup
+  populateInitialData().catch(err => console.error('❌ Background population failed:', err));
   
   const app = express();
   const PORT = 3000;
@@ -137,13 +139,18 @@ async function createExpressApp() {
     console.log(`Login attempt: "${identifiant}"`);
     
     try {
-      // 1. Try "users" collection (Primary)
-      // Check by email (case-insensitive) or identifiant
-      const usersSnap = await getDocs(collection(getDb(), 'users'));
-      const docUser = usersSnap.docs.find(d => {
-        const data = d.data();
-        return (data.email?.toLowerCase() === identifiantLower) || (data.identifiant === identifiant);
-      });
+      // 1. Try "users" collection (Primary) - Search by email first
+      const qEmail = query(collection(getDb(), 'users'), where('email', '==', identifiantLower), limit(1));
+      const usersSnapEmail = await getDocs(qEmail);
+      
+      let docUser = usersSnapEmail.docs[0];
+      
+      // If not found by email, try by identifiant
+      if (!docUser) {
+        const qIdent = query(collection(getDb(), 'users'), where('identifiant', '==', identifiant), limit(1));
+        const usersSnapIdent = await getDocs(qIdent);
+        docUser = usersSnapIdent.docs[0];
+      }
       
       if (docUser) {
         const userData = docUser.data() as any;
@@ -180,11 +187,16 @@ async function createExpressApp() {
       }
       
       // 2. Try "staff" collection
-      const staffSnap = await getDocs(collection(getDb(), 'staff'));
-      const docStaff = staffSnap.docs.find(d => {
-        const data = d.data();
-        return (data.email?.toLowerCase() === identifiantLower) || (data.identifiant === identifiant);
-      });
+      const qStaffEmail = query(collection(getDb(), 'staff'), where('email', '==', identifiantLower), limit(1));
+      const staffSnapEmail = await getDocs(qStaffEmail);
+      
+      let docStaff = staffSnapEmail.docs[0];
+      
+      if (!docStaff) {
+        const qStaffIdent = query(collection(getDb(), 'staff'), where('identifiant', '==', identifiant), limit(1));
+        const staffSnapIdent = await getDocs(qStaffIdent);
+        docStaff = staffSnapIdent.docs[0];
+      }
       
       if (docStaff) {
         const staffData = docStaff.data() as any;
@@ -349,7 +361,7 @@ async function createExpressApp() {
       const { collection: colName, id } = req.params;
       console.log(`DELETE request: collection=${colName}, id=${id}`);
       
-      const dRef = doc(db, colName, id);
+      const dRef = doc(getDb(), colName, id);
       
       await deleteDoc(dRef);
       console.log(`✅ DELETE successful for ${colName}/${id}`);
@@ -391,25 +403,29 @@ async function createExpressApp() {
     app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server ready at http://localhost:${PORT}`);
-    });
-  }
-  
   return app;
 }
 
 const appPromise = createExpressApp();
 
 export default async (req: any, res: any) => {
-  const app = await appPromise;
-  return app(req, res);
+  try {
+    const app = await appPromise;
+    return app(req, res);
+  } catch (error: any) {
+    console.error('CRITICAL: Server initialization failed:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'The server failed to start. Please check logs.',
+        details: error.message
+      });
+    }
+  }
 };
 
 // Local dev server
 if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
   appPromise.then(app => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Dev server running on http://localhost:${PORT}`);
