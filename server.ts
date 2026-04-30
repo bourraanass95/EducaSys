@@ -29,33 +29,29 @@ console.log('Starting MIAGE Nexus ERP Backend...');
 // during serverless initialization.
 
 // Initialize Firebase Client SDK
-let firebaseApp;
+let firebaseApp: any;
 let db: any;
 
-try {
-  // Try to load from file first (local dev)
+function getFirebaseConfig() {
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
   if (fs.existsSync(configPath)) {
-    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    firebaseApp = initializeApp(firebaseConfig);
-    console.log(`Firebase Initialized from file: ${firebaseConfig.projectId}`);
-  } else {
-    // Fallback to Environment Variables (Vercel Production)
-    const firebaseConfig = {
-      apiKey: process.env.VITE_FIREBASE_API_KEY,
-      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.VITE_FIREBASE_APP_ID
-    };
-    firebaseApp = initializeApp(firebaseConfig);
-    console.log(`Firebase Initialized from Environment Variables: ${firebaseConfig.projectId}`);
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
   }
-  db = getFirestore(firebaseApp);
-} catch (err) {
-  console.error("Firebase init error:", err);
+  return {
+    apiKey: process.env.VITE_FIREBASE_API_KEY,
+    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.VITE_FIREBASE_APP_ID,
+    firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)'
+  };
 }
+
+const config = getFirebaseConfig();
+firebaseApp = initializeApp(config);
+db = getFirestore(firebaseApp, config.firestoreDatabaseId || '(default)');
+console.log(`Firebase Initialized for project: ${config.projectId} (DB: ${config.firestoreDatabaseId || '(default)'})`);
 
 async function wipeAllData() {
   console.log('🧹 Wiping all data from database...');
