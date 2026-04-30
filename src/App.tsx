@@ -21,7 +21,7 @@ import { SuperAdminDashboard } from './components/SuperAdminDashboard';
 import { Login } from './components/Login';
 import { Profile } from './components/Profile';
 import { SchoolProfile } from './components/SchoolProfile';
-import { Search, User, LogOut, Menu, X as CloseIcon, ChevronDown, Command, Globe as GlobeIcon } from 'lucide-react';
+import { Search, User, School, LogOut, Menu, X as CloseIcon, ChevronDown, Command, Globe as GlobeIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserRole } from './types';
 import { cn } from './lib/utils';
@@ -66,53 +66,66 @@ const SchoolLayout = ({
         onClose={() => setIsSidebarOpen(false)}
       />
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 px-4 md:px-8 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-sm z-20 border-b border-gray-50">
-          <div className="flex items-center gap-2 md:gap-4 flex-1">
+        <header className="h-16 px-4 md:px-8 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b border-gray-50/50">
+          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
              <button 
                onClick={() => setIsSidebarOpen(true)}
-               className="lg:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-400"
+               className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-xl text-gray-500 transition-colors"
+               aria-label="Open Menu"
              >
-               <Menu className="w-6 h-6" />
+               <Menu className="w-5 h-5 md:w-6 md:h-6" />
              </button>
-             <div className="flex flex-col min-w-0">
-                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-blue-600 italic truncate">Instance: {subdomain}</span>
-                <div className="flex items-center gap-2 mt-0.5">
-                   <span className="text-xs md:text-sm font-bold text-black truncate">
-                    {NAVIGATION_SECTIONS.find(s => s.items.some(i => i.id === activeTab))?.items.find(i => i.id === activeTab)?.label || 'Aperçu'}
+             
+             <div className="flex items-center gap-2 min-w-0 max-w-[150px] sm:max-w-none">
+                {portalUser?.schoolLogoUrl ? (
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden border border-gray-100/50 shadow-sm">
+                    <img src={portalUser.schoolLogoUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100/30">
+                    <School className="w-4 h-4 text-blue-600" />
+                  </div>
+                )}
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-blue-600/70 italic truncate">
+                    {subdomain}
                   </span>
+                  <h1 className="text-sm md:text-base font-black text-black truncate leading-tight">
+                    {NAVIGATION_SECTIONS.flatMap(s => s.items).find(i => i.id === activeTab)?.label || 'Aperçu'}
+                  </h1>
                 </div>
              </div>
              
-             <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl ml-8 w-64 group focus-within:bg-white focus-within:border-blue-200 transition-all">
-                <Search className="w-4 h-4 text-gray-400" />
+             <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100/50 rounded-2xl ml-8 w-64 group focus-within:bg-white focus-within:border-blue-200 transition-all focus-within:shadow-sm">
+                <Search className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500" />
                 <input 
                   type="text" 
-                  placeholder="Recherche rapide..." 
-                  className="bg-transparent border-none outline-none text-xs font-medium text-black placeholder:text-gray-400 w-full"
+                  placeholder="Recherche (Ctrl + K)" 
+                  className="bg-transparent border-none outline-none text-xs font-bold text-black placeholder:text-gray-400 w-full"
+                  onFocus={() => setShowCommandPalette(true)}
+                  readOnly
                 />
                 <span className="text-[10px] font-black text-gray-300 border border-gray-200 px-1.5 py-0.5 rounded-md">/</span>
              </div>
-             
-             <button 
-              onClick={() => setShowCommandPalette(true)}
-              className="lg:hidden p-2 text-gray-400 hover:text-blue-600 transition-colors"
-             >
-              <Command className="w-5 h-5" />
-             </button>
           </div>
-          <div className="flex items-center gap-4 md:gap-6 flex-wrap md:flex-nowrap justify-end">
-            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-gray-500 hover:text-blue-600 transition-all cursor-pointer">
-              <GlobeIcon className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-black uppercase italic tracking-widest">FR</span>
-            </div>
-            <NotificationsMenu activeRole={activeRole} user={portalUser} />
+
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
             <button 
-              onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group"
+              onClick={() => setShowCommandPalette(true)}
+              className="lg:hidden p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
             >
-              <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <Search className="w-5 h-5" />
             </button>
-            <div className="h-8 w-[1px] bg-gray-100 mx-1"></div>
+
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gray-50/50 border border-transparent hover:border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 transition-all cursor-pointer group">
+              <GlobeIcon className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
+              <span className="text-[10px] font-black tracking-widest italic group-hover:translate-x-0.5 transition-transform">FR</span>
+            </div>
+
+            <NotificationsMenu activeRole={activeRole} user={portalUser} />
+            
+            <div className="hidden md:block h-6 w-px bg-gray-100"></div>
+
             <div className="relative" ref={profileMenuRef}>
               <button 
                 type="button"
@@ -121,19 +134,26 @@ const SchoolLayout = ({
                   e.stopPropagation();
                   setShowProfileMenu(!showProfileMenu);
                 }}
-                className="flex items-center gap-3 pl-2 group"
+                className="flex items-center gap-2 sm:gap-3 group"
               >
-                <div className="text-right hidden sm:block">
-                  <p className="text-xs font-black text-black italic group-hover:text-blue-600 transition-colors">{portalUser?.name || 'User Profil'}</p>
-                  <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{activeRole}</p>
+                <div className="text-right hidden lg:block">
+                  <p className="text-[11px] font-black text-black italic group-hover:text-blue-600 transition-colors truncate max-w-[100px]">
+                    {portalUser?.name || 'Profil'}
+                  </p>
+                  <p className="text-[9px] text-blue-600/80 font-black uppercase tracking-widest">{activeRole}</p>
                 </div>
+                
                 <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center font-black italic shadow-lg relative group-hover:scale-105 transition-transform",
-                  activeRole === 'Admin' ? "bg-gray-900 text-white" : "bg-blue-500 text-white"
+                  "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-black italic shadow-md relative group-hover:ring-2 ring-blue-500/20 ring-offset-2 transition-all",
+                  activeRole === 'Admin' ? "bg-gray-900 text-white" : "bg-blue-500 text-white shadow-blue-500/20"
                 )}>
-                  {portalUser?.avatarUrl ? <img src={portalUser.avatarUrl} alt="" className="w-full h-full object-cover rounded-xl" /> : (portalUser?.name?.[0] || activeRole[0])}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center border border-gray-100">
-                    <ChevronDown className={cn("w-2.5 h-2.5 text-gray-400 transition-transform", showProfileMenu && "rotate-180")} />
+                  {portalUser?.avatarUrl ? (
+                    <img src={portalUser.avatarUrl} alt="" className="w-full h-full object-cover rounded-xl" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="text-sm">{(portalUser?.name?.[0] || activeRole[0])}</span>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center border border-gray-100 shadow-sm">
+                    <ChevronDown className={cn("w-2 h-2 text-gray-400 transition-transform duration-300", showProfileMenu && "rotate-180")} />
                   </div>
                 </div>
               </button>
@@ -195,11 +215,14 @@ const SchoolLayout = ({
             </motion.div>
           </AnimatePresence>
         </div>
-        <footer className="px-8 py-4 border-t border-gray-50 text-[10px] text-gray-400 flex justify-between items-center bg-white">
-          <p>© 2026 {portalUser?.schoolName || 'EducaSys'} - Nexus Powered</p>
+        <footer className="px-4 md:px-8 py-4 border-t border-gray-50/50 text-[10px] text-gray-400 flex flex-col sm:flex-row justify-between items-center bg-white gap-2">
+          <p className="font-bold italic">© 2026 {portalUser?.schoolName || 'EducaSys'} - Nexus Powered</p>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> Système Optimal</span>
-            <span className="font-mono">v2.4.0-LT</span>
+            <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
+              <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> 
+              Online
+            </span>
+            <span className="font-mono opacity-60">v2.4.0-LT</span>
           </div>
         </footer>
       </main>

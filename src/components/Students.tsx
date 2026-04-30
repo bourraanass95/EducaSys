@@ -23,6 +23,7 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
   const [selectedFiliere, setSelectedFiliere] = useState('Tous');
   const [selectedStatus, setSelectedStatus] = useState('Tous');
   const [selectedYear, setSelectedYear] = useState('Tous');
+  const [selectedPromo, setSelectedPromo] = useState('Tous');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
@@ -324,8 +325,11 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
     const matchesFiliere = selectedFiliere === 'Tous' || student.program === selectedFiliere;
     const matchesStatus = selectedStatus === 'Tous' || student.status === selectedStatus;
     const matchesYear = selectedYear === 'Tous' || student.year?.toString() === selectedYear;
-    return matchesSearch && matchesFiliere && matchesStatus && matchesYear;
+    const matchesPromo = selectedPromo === 'Tous' || student.registrationYear === selectedPromo;
+    return matchesSearch && matchesFiliere && matchesStatus && matchesYear && matchesPromo;
   });
+
+  const uniqueRegistrationYears = Array.from(new Set(students.map(s => s.registrationYear).filter(Boolean))).sort().reverse();
 
   if (loading && students.length === 0) {
     return (
@@ -415,6 +419,19 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
             <option value="Tous">Année: Tous</option>
             <option value="1">1ère Année</option>
             <option value="2">2ème Année</option>
+            <option value="3">3ème Année</option>
+            <option value="4">4ème Année</option>
+            <option value="5">5ème Année</option>
+          </select>
+          <select 
+            value={selectedPromo}
+            onChange={(e) => setSelectedPromo(e.target.value)}
+            className="px-3 border border-gray-100 rounded-xl text-xs font-semibold text-gray-600 bg-gray-50/50 outline-none focus:border-blue-500 flex-1 md:flex-none"
+          >
+            <option value="Tous">Promotion: Tous</option>
+            {uniqueRegistrationYears.map(year => (
+              <option key={year} value={year}>Promo {year}</option>
+            ))}
           </select>
         </div>
       </div>

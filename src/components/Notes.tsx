@@ -7,9 +7,11 @@ import {
   ChevronDown,
   BookOpen,
   Filter,
+  Search,
   CheckCircle2,
   X,
-  FileDown
+  FileDown,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,8 +32,9 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   const [selectedFiliere, setSelectedFiliere] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedModule, setSelectedModule] = useState('');
+  const [searchStudent, setSearchStudent] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [classGrades, setClassGrades] = useState<any[]>([]);
 
   // Modal State
@@ -67,7 +70,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   }, [activeStudent, selectedModalModule]);
 
   useEffect(() => {
-    if (selectedFiliere && selectedYear && selectedModule) {
+    if (selectedFiliere && selectedYear) {
       loadClassGrades();
     } else {
       setClassGrades([]);
@@ -80,7 +83,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
       const relevantGrades = allGrades.filter((g: any) => 
         g.filiere === selectedFiliere &&
         g.year === selectedYear &&
-        g.module === selectedModule
+        (selectedModule ? g.module === selectedModule : true)
       );
       setClassGrades(relevantGrades);
     } catch (error) {
@@ -187,15 +190,20 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
         schoolId: user?.schoolId
       }).catch(console.error);
 
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setToast({ 
+        message: `Notes de ${activeStudent.name} enregistrées avec succès pour ${selectedModalModule}.`, 
+        type: 'success' 
+      });
+      setTimeout(() => setToast(null), 4000);
+      
       setActiveStudent(null);
       setSelectedModalModule('');
       if (selectedModule === selectedModalModule) {
         loadClassGrades();
       }
     } catch (error) {
-      alert('Erreur lors de l\'enregistrement des notes');
+      setToast({ message: 'Erreur lors de l\'enregistrement des notes. Veuillez réessayer.', type: 'error' });
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setIsSaving(false);
     }
@@ -283,6 +291,11 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
     }
   };
 
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
+    s.email.toLowerCase().includes(searchStudent.toLowerCase())
+  );
+
   const filiereObj = filieres.find(f => f.name === selectedFiliere);
   const filteredModules = modules.filter(m => {
     if (!filiereObj) return true;
@@ -309,11 +322,6 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
               <FileDown className="w-4 h-4" /> 
               {isExporting ? 'Génération...' : 'Extraire Bulletins PDF'}
             </button>
-          )}
-          {success && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl border border-green-100 font-bold text-xs">
-              <CheckCircle2 className="w-4 h-4" /> Notes enregistrées avec succès
-            </motion.div>
           )}
         </div>
       </div>
@@ -357,6 +365,21 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
           )}
 
           {selectedFiliere && selectedYear && (
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Rechercher un étudiant..."
+                  value={searchStudent}
+                  onChange={(e) => setSearchStudent(e.target.value)}
+                  className="w-full pl-12 pr-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-600 rounded-2xl text-sm font-bold italic outline-none transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedFiliere && selectedYear && (
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -391,65 +414,151 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
             <p className="text-gray-400 font-bold italic">Aucun étudiant actif trouvé dans cette classe pour l'année sélectionnée.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[48px] border border-gray-100 shadow-sm overflow-hidden p-2">
-          <ul className="divide-y divide-gray-50">
-            {students.map((student) => (
-               <li 
-                 key={student.id} 
-                 onClick={() => {
-                   setActiveStudent(student);
-                   setSelectedModalModule(selectedModule || '');
-                 }}
-                 className="flex items-center justify-between p-4 px-6 hover:bg-gray-50/80 rounded-[32px] cursor-pointer transition-colors group"
-               >
-                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-black italic shadow-inner">
-                       {student.name?.[0]}
+        <>
+          {selectedFiliere && selectedYear && !selectedModule && !searchStudent && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {filteredModules.map(m => {
+                const moduleGrades = classGrades.filter(g => g.module === m.name);
+                const scoresList = moduleGrades.map(g => {
+                  const s = g.scores || [];
+                  return s.length > 0 ? (s.reduce((a:number, b:number) => a + b, 0) / s.length) : 0;
+                });
+                const avg = scoresList.length > 0 
+                  ? (scoresList.reduce((a, b) => a + b, 0) / scoresList.length).toFixed(2)
+                  : null;
+
+                return (
+                  <motion.button 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={m.id}
+                    onClick={() => setSelectedModule(m.name)}
+                    className="p-8 bg-white border border-gray-100 rounded-[32px] hover:border-blue-200 hover:shadow-xl transition-all text-left flex flex-col gap-4 group relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                    
+                    <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner relative z-10">
+                      <BookOpen className="w-7 h-7" />
                     </div>
-                    <div>
-                       <p className="font-black text-gray-900 italic uppercase tracking-tight">{student.name}</p>
-                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{student.email} • ID: {student.id.substring(0,8)}</p>
+                    
+                    <div className="relative z-10 w-full">
+                      <h4 className="font-black text-gray-900 italic uppercase tracking-tighter text-lg leading-tight mb-4 group-hover:text-blue-700 transition-colors">
+                        {m.name}
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">Moyenne Classe</span>
+                          <span className={cn(
+                            "text-2xl font-black italic",
+                            avg && Number(avg) >= 10 ? "text-emerald-500" : (avg ? "text-rose-500" : "text-gray-200")
+                          )}>
+                            {avg || '--'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">Participation</span>
+                          <span className="text-2xl font-black italic text-gray-900">
+                            {moduleGrades.length}<span className="text-gray-300 text-sm ml-1 font-medium">/ {students.length}</span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <button 
-                     type="button"
-                     onClick={(e) => exportSinglePDF(e, student)}
-                     className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition-all uppercase tracking-widest flex items-center gap-1.5"
-                   >
-                     <FileDown className="w-3.5 h-3.5" /> PDF
-                   </button>
-                   {selectedModule ? (
-                     <div className="flex items-center gap-4">
-                       <div className="flex gap-2 bg-gray-50 px-4 py-2 rounded-xl">
-                         {Array.from({ length: modules.find(m => m.name === selectedModule)?.examCount || 1 }).map((_, idx) => {
-                           const stRecord = classGrades.find(g => g.studentId === student.id);
-                           const score = stRecord?.scores?.[idx] !== undefined ? stRecord.scores[idx] : null;
-                           return (
-                             <div key={idx} className="flex flex-col items-center justify-center">
-                               <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">N{idx + 1}</span>
-                               <span className={cn(
-                                 "text-sm font-black w-8 text-center leading-none",
-                                 score === null ? "text-gray-300" : (score >= 10 ? "text-emerald-600" : "text-rose-500")
-                               )}>{score !== null ? score : '-'}</span>
-                             </div>
-                           );
-                         })}
-                       </div>
-                       <div className="px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-600 group-hover:bg-blue-100 transition-all uppercase tracking-widest">
-                         Éditer
-                       </div>
-                     </div>
-                   ) : (
-                     <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 group-hover:text-blue-600 group-hover:bg-blue-50 group-hover:border-blue-100 transition-all uppercase tracking-widest">
-                       Saisir Notes
-                     </div>
-                   )}
-                 </div>
-               </li>
-            ))}
-          </ul>
-        </div>
+
+                    <div className="mt-4 flex items-center justify-between relative z-10">
+                      <div className="flex -space-x-2">
+                        {moduleGrades.slice(0, 3).map((g, i) => (
+                          <div key={i} className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-black italic uppercase">
+                            {g.studentName?.[0]}
+                          </div>
+                        ))}
+                        {moduleGrades.length > 3 && (
+                          <div className="w-8 h-8 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center text-[10px] font-black text-blue-600">
+                            +{moduleGrades.length - 3}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                        Gérer <ChevronDown className="w-3 h-3 -rotate-90" />
+                      </span>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+
+          {(selectedModule || searchStudent) && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-white rounded-[48px] border border-gray-100 shadow-sm overflow-hidden p-2"
+            >
+              <ul className="divide-y divide-gray-50">
+                {filteredStudents.length === 0 ? (
+                  <li className="p-20 text-center text-gray-400 font-bold italic">
+                    Aucun étudiant ne correspond à votre recherche.
+                  </li>
+                ) : (
+                  filteredStudents.map(student => (
+                    <li 
+                      key={student.id} 
+                      onClick={() => {
+                        setActiveStudent(student);
+                        setSelectedModalModule(selectedModule || '');
+                      }}
+                      className="flex items-center justify-between p-4 px-6 hover:bg-gray-50/80 rounded-[32px] cursor-pointer transition-colors group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-black italic shadow-inner">
+                          {student.name?.[0]}
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900 italic uppercase tracking-tight">{student.name}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{student.email} • ID: {student.id.substring(0,8)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          type="button"
+                          onClick={(e) => exportSinglePDF(e, student)}
+                          className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition-all uppercase tracking-widest flex items-center gap-1.5"
+                        >
+                          <FileDown className="w-3.5 h-3.5" /> PDF
+                        </button>
+                        {selectedModule ? (
+                          <div className="flex items-center gap-4">
+                            <div className="flex gap-2 bg-gray-50 px-4 py-2 rounded-xl">
+                              {Array.from({ length: modules.find(m => m.name === selectedModule)?.examCount || 1 }).map((_, idx) => {
+                                const stRecord = classGrades.find(g => g.studentId === student.id);
+                                const score = stRecord?.scores?.[idx] !== undefined ? stRecord.scores[idx] : null;
+                                return (
+                                  <div key={idx} className="flex flex-col items-center justify-center">
+                                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">N{idx + 1}</span>
+                                    <span className={cn(
+                                      "text-sm font-black w-8 text-center leading-none",
+                                      score === null ? "text-gray-300" : (score >= 10 ? "text-emerald-600" : "text-rose-500")
+                                    )}>{score !== null ? score : '-'}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-600 group-hover:bg-blue-100 transition-all uppercase tracking-widest">
+                              Éditer
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-400 group-hover:text-blue-600 group-hover:bg-blue-50 group-hover:border-blue-100 transition-all uppercase tracking-widest">
+                            Saisir Notes
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  )))}
+              </ul>
+            </motion.div>
+          )}
+        </>
       )}
 
       {/* Grade Entry Modal */}
@@ -527,6 +636,27 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={cn(
+              "fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[320px] max-w-md",
+              toast.type === 'success' ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
+            )}
+          >
+            {toast.type === 'success' ? <CheckCircle2 className="w-6 h-6 shrink-0" /> : <AlertCircle className="w-6 h-6 shrink-0" />}
+            <p className="text-sm font-bold leading-tight">{toast.message}</p>
+            <button onClick={() => setToast(null)} className="ml-auto p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

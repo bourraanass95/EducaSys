@@ -82,7 +82,7 @@ export const NotificationsMenu = ({ activeRole, user }: { activeRole: UserRole, 
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden z-50 flex flex-col max-h-[80vh]">
+        <div className="absolute right-0 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 bg-white border border-gray-100 shadow-2xl rounded-2xl overflow-hidden z-50 flex flex-col max-h-[80vh] fixed sm:absolute left-4 sm:left-auto">
           <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
             <h3 className="font-bold text-gray-900">Notifications</h3>
             {unreadCount > 0 && (

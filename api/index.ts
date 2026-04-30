@@ -115,6 +115,12 @@ async function createExpressApp() {
 
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
+
+  // Debugging middleware
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
   
   // Disable caching for API responses to prevent stale data
   app.use('/api', (req, res, next) => {
@@ -398,6 +404,12 @@ async function createExpressApp() {
     }
   });
 
+  // Generic error handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('❌ Express Error:', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  });
+
   // Vite
   if (process.env.NODE_ENV !== 'production' && process.env.VITE_DEV_SERVER !== 'false') {
     const { createServer: createViteServer } = await import('vite');
@@ -448,12 +460,14 @@ export default async (req: any, res: any) => {
   }
 };
 
-// Local dev server
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = Number(process.env.PORT) || 3000;
+// Start server if not running as a Vercel function
+if (!process.env.VERCEL) {
+  const PORT = 3000;
   appPromise.then(app => {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Dev server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
     });
+  }).catch(err => {
+    console.error('❌ Failed to start server:', err);
   });
 }

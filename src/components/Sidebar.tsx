@@ -57,8 +57,12 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user, isOpen, onC
           onClick={() => setActiveTab('school-profile')}
           className={cn("p-6 flex items-center gap-3 relative w-full", isCollapsed ? "justify-center px-0" : "hover:bg-gray-50 transition-colors cursor-pointer")}
         >
-        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-500/20">
-          <School className="w-6 h-6" />
+        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-500/20 overflow-hidden">
+          {user?.schoolLogoUrl ? (
+            <img src={user.schoolLogoUrl} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <School className="w-6 h-6" />
+          )}
         </div>
         {!isCollapsed && (
           <motion.div 

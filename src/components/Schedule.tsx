@@ -75,10 +75,46 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
 
   const handleSaveSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (occupiedRooms.includes(scheduleForm.room)) {
-      alert('Cette salle est déjà occupée sur ce créneau horaire.');
+    const { day, startTime, endTime, room, teacher, group } = scheduleForm;
+
+    if (startTime >= endTime) {
+      alert('L\'heure de début doit être avant l\'heure de fin.');
       return;
     }
+
+    // Check room occupancy
+    const isRoomTaken = schedules.some(s => {
+      if (editingSchedule && s.id === editingSchedule.id) return false;
+      return s.day === day && s.room === room && s.startTime < endTime && s.endTime > startTime;
+    });
+
+    if (isRoomTaken) {
+      alert(`La salle "${room}" est déjà occupée sur ce créneau horaire.`);
+      return;
+    }
+
+    // Check teacher occupancy
+    const isTeacherBusy = schedules.some(s => {
+      if (editingSchedule && s.id === editingSchedule.id) return false;
+      return s.day === day && s.teacher === teacher && s.startTime < endTime && s.endTime > startTime;
+    });
+
+    if (isTeacherBusy) {
+      alert(`Le professeur "${teacher}" a déjà un cours programmé sur ce créneau.`);
+      return;
+    }
+
+    // Check group/class occupancy
+    const isGroupBusy = schedules.some(s => {
+      if (editingSchedule && s.id === editingSchedule.id) return false;
+      return s.day === day && s.group === group && s.year === scheduleForm.year && s.startTime < endTime && s.endTime > startTime;
+    });
+
+    if (isGroupBusy) {
+      alert(`La classe "${group}" a déjà un cours programmé sur ce créneau.`);
+      return;
+    }
+
     try {
       if (editingSchedule) {
         await api.updateGeneric('schedules', editingSchedule.id, scheduleForm);
@@ -123,11 +159,26 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
 
   const occupiedRooms = getOccupiedRooms();
 
-  useEffect(() => {
-    if (scheduleForm.room && occupiedRooms.includes(scheduleForm.room)) {
-      setScheduleForm(prev => ({ ...prev, room: '' }));
+  const getSubjectColor = (name: string) => {
+    const SUBJECT_COLORS = [
+      { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', icon: 'text-blue-600' },
+      { bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', icon: 'text-indigo-600' },
+      { bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-900', icon: 'text-purple-600' },
+      { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-900', icon: 'text-emerald-600' },
+      { bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-900', icon: 'text-rose-600' },
+      { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-900', icon: 'text-amber-600' },
+      { bg: 'bg-cyan-50', border: 'border-cyan-100', text: 'text-cyan-900', icon: 'text-cyan-600' },
+      { bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-900', icon: 'text-orange-600' },
+    ];
+
+    if (!name) return SUBJECT_COLORS[0];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-  }, [scheduleForm.day, scheduleForm.startTime, scheduleForm.endTime]); // Removed occupiedRooms to avoid circular dependency loop
+    const index = Math.abs(hash) % SUBJECT_COLORS.length;
+    return SUBJECT_COLORS[index];
+  };
 
   return (
     <div className="space-y-6">
@@ -220,27 +271,35 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
                           : 1;
 
                         const session = startingSession;
+                        const theme = session ? getSubjectColor(session.name) : null;
 
                         return (
                           <td key={day} rowSpan={rowSpan} className={cn("p-2 border-r border-gray-50 min-w-[150px] align-top relative group", !session && "bg-white hover:bg-gray-50/50 transition-colors h-32")}> 
-                            {session ? (
-                              <div className="w-full bg-blue-50 rounded-xl p-3 border border-blue-100 flex flex-col hover:shadow-md transition-shadow" style={{ minHeight: `calc(${rowSpan * 8}rem - 1rem)` }}>
-                                <h4 className="font-bold text-blue-900 text-xs mb-1 line-clamp-2 pr-6">{session.name}</h4>
+                            {session && theme ? (
+                              <div 
+                                className={cn(
+                                  "w-full rounded-xl p-3 border flex flex-col hover:shadow-md transition-shadow",
+                                  theme.bg,
+                                  theme.border
+                                )} 
+                                style={{ minHeight: `calc(${rowSpan * 8}rem - 1rem)` }}
+                              >
+                                <h4 className={cn("font-bold text-xs mb-1 line-clamp-2 pr-6", theme.text)}>{session.name}</h4>
                                 <div className="space-y-1 mt-auto pt-2">
-                                  <div className="flex items-center gap-1 text-[10px] text-blue-600 font-medium">
+                                  <div className={cn("flex items-center gap-1 text-[10px] font-medium", theme.icon)}>
                                     <User className="w-3 h-3" /> {session.teacher}
                                   </div>
-                                  <div className="flex items-center gap-1 text-[10px] text-blue-600 font-medium">
+                                  <div className={cn("flex items-center gap-1 text-[10px] font-medium", theme.icon)}>
                                     <MapPin className="w-3 h-3" /> {session.room}
                                   </div>
-                                  <div className="flex items-center gap-1 text-[10px] text-blue-600 font-medium">
+                                  <div className={cn("flex items-center gap-1 text-[10px] font-medium", theme.icon)}>
                                     <Clock className="w-3 h-3" /> {session.startTime} - {session.endTime}
                                   </div>
                                 </div>
                                 
                                 {canManage && (
                                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white shadow-md p-1 rounded-lg">
-                                    <button onClick={() => { setEditingSchedule(session); setScheduleForm(session); setIsModalOpen(true); }} className="p-1 hover:bg-blue-50 rounded text-blue-600"><Edit2 className="w-3 h-3" /></button>
+                                    <button onClick={() => { setEditingSchedule(session); setScheduleForm(session); setIsModalOpen(true); }} className={cn("p-1 hover:bg-gray-50 rounded", theme.icon)}><Edit2 className="w-3 h-3" /></button>
                                     <button onClick={() => handleDeleteSchedule(session.id)} className="p-1 hover:bg-red-50 rounded text-red-600"><Trash2 className="w-3 h-3" /></button>
                                   </div>
                                 )}
