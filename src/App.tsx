@@ -21,7 +21,7 @@ import { SuperAdminDashboard } from './components/SuperAdminDashboard';
 import { Login } from './components/Login';
 import { Profile } from './components/Profile';
 import { SchoolProfile } from './components/SchoolProfile';
-import { Search, User, School, LogOut, Menu, X as CloseIcon, ChevronDown, Command, Globe as GlobeIcon } from 'lucide-react';
+import { Search, User, School, LogOut, Menu, X as CloseIcon, ChevronDown, Command, Globe as GlobeIcon, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserRole } from './types';
 import { cn } from './lib/utils';
@@ -236,6 +236,21 @@ const SchoolLayout = ({
 };
 
 const renderSchoolContent = (activeTab: string, activeRole: UserRole, portalUser: any, onUpdateUser: (data: any) => void) => {
+  if (portalUser?.disabledFeatures && Array.isArray(portalUser.disabledFeatures) && portalUser.disabledFeatures.includes(activeTab)) {
+    return (
+      <div className="bg-white p-12 rounded-[32px] border border-gray-100 shadow-sm text-center max-w-lg mx-auto my-12">
+        <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-black mb-2">Service Non Disponible</h2>
+        <p className="text-gray-500 text-sm leading-relaxed mb-6">
+          Cette fonctionnalité a été désactivée pour votre établissement par l'administrateur de la plateforme EducaSys.
+        </p>
+        <p className="text-xs text-gray-400 italic">Veuillez contacter le support ou votre administrateur pour plus d'informations.</p>
+      </div>
+    );
+  }
+
   switch (activeTab) {
     case 'dashboard':
       return (activeRole === 'Admin' || activeRole === 'Staff' || activeRole === 'Director') ? <Dashboard user={portalUser} /> : <div className="p-12 text-center text-gray-400 italic">Accès non autorisé</div>;
@@ -320,8 +335,9 @@ const SchoolPortal = ({
     schoolAddress: currentSchool.address,
     schoolEmail: currentSchool.contactEmail,
     schoolPhone: currentSchool.phone,
-    schoolWebsite: currentSchool.website
-  } : activeUser;
+    schoolWebsite: currentSchool.website,
+    disabledFeatures: currentSchool.disabledFeatures || []
+  } : (activeUser ? { ...activeUser, disabledFeatures: [] } : null);
 
   const handleUpdate = (data: any) => {
     if (activeTab === 'school-profile') {

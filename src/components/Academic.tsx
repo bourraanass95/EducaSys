@@ -96,6 +96,7 @@ export const Academic = ({ activeRole, user }: AcademicProps) => {
 
   const confirmDeleteStructure = async () => {
     if (!structureToDelete) return;
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette structure ?')) return;
     await api.deleteGeneric('structures', structureToDelete.id);
     setStructureToDelete(null);
     loadData();
@@ -109,6 +110,7 @@ export const Academic = ({ activeRole, user }: AcademicProps) => {
 
   const confirmDeleteFiliere = async () => {
     if (!filiereToDelete) return;
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette filière ?')) return;
     await api.deleteFiliere(filiereToDelete.id);
     if (selectedFiliereId === filiereToDelete.id) setSelectedFiliereId(null);
     setFiliereToDelete(null);

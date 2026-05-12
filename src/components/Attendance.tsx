@@ -51,6 +51,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
 
   const canMarkAttendance = activeRole === 'Admin' || activeRole === 'Staff';
   const isViewOnly = false;
+  const isTeachersDisabled = user?.disabledFeatures?.includes('teachers');
 
   useEffect(() => {
     loadInitialData();
@@ -331,23 +332,23 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
         </div>
         {!isViewOnly && (
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-full sm:w-auto">
+            <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-full sm:w-auto items-center">
                <button 
                   onClick={() => setActiveTab('input')}
-                  className={cn("flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2", activeTab === 'input' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50")}
+                  className={cn("flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2", activeTab === 'input' ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
                >
                   <UserCheck className="w-4 h-4" /> Saisie
                </button>
                <button 
                   onClick={() => setActiveTab('reports')}
-                  className={cn("flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 justify-center", activeTab === 'reports' ? "bg-blue-600 text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50")}
+                  className={cn("flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 justify-center", activeTab === 'reports' ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-500 hover:bg-gray-50")}
                >
                   <BarChartHorizontal className="w-4 h-4" /> Rapports
                </button>
-               {activeRole === 'Admin' && (
+               {activeRole === 'Admin' && !isTeachersDisabled && (
                  <button 
                     onClick={() => setActiveTab('teacher-reports')}
-                    className={cn("flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 justify-center", activeTab === 'teacher-reports' ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" : "text-gray-500 hover:bg-gray-50")}
+                    className={cn("flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 justify-center", activeTab === 'teacher-reports' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-500 hover:bg-gray-50")}
                  >
                     <BookOpen className="w-4 h-4" /> Rapports Enseignants
                  </button>

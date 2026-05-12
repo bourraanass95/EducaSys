@@ -371,13 +371,15 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
                     {modules.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-gray-400">Professeur</label>
-                  <select required value={scheduleForm.teacher || ''} onChange={e => setScheduleForm({...scheduleForm, teacher: e.target.value})} className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 ring-blue-500">
-                    <option value="" disabled>Choisir un professeur...</option>
-                    {teachers.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                  </select>
-                </div>
+                {!user?.disabledFeatures?.includes('teachers') && (
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400">Professeur</label>
+                    <select required value={scheduleForm.teacher || ''} onChange={e => setScheduleForm({...scheduleForm, teacher: e.target.value})} className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 ring-blue-500">
+                      <option value="" disabled>Choisir un professeur...</option>
+                      {teachers.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-bold uppercase text-gray-400">Salle</label>

@@ -171,6 +171,21 @@ export const Dashboard = ({ user }: { user: any }) => {
     );
   }
 
+  const isAttendanceDisabled = user?.disabledFeatures?.includes('attendance');
+  const isFinanceDisabled = user?.disabledFeatures?.includes('finance');
+  const isNotesDisabled = user?.disabledFeatures?.includes('notes');
+  const isStaffDisabled = user?.disabledFeatures?.includes('staff');
+  const isAcademicDisabled = user?.disabledFeatures?.includes('academic');
+
+  // Calculate dynamic grid column layout for the metrics charts row
+  let activeChartsCount = 2; // Statuts des Étudiants is always shown
+  if (!isFinanceDisabled) activeChartsCount++;
+  if (!isStaffDisabled) activeChartsCount++;
+
+  const chartsGridClass = activeChartsCount === 4 
+    ? "lg:grid-cols-4"
+    : (activeChartsCount === 3 ? "lg:grid-cols-3" : (activeChartsCount === 2 ? "lg:grid-cols-2" : "grid-cols-1"));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -202,13 +217,14 @@ export const Dashboard = ({ user }: { user: any }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Étudiants Actifs" value={computed.studentsCount} icon={Users} color="blue" />
-        <StatCard title="Recettes Réalisées" value={`${computed.totalPaid.toLocaleString()} DH`} icon={Wallet} color="green" />
-        <StatCard title="Restes à Recouvrir" value={`${Math.max(0, computed.totalDue - computed.totalPaid).toLocaleString()} DH`} icon={TrendingDown} color="amber" />
-        <StatCard title="Taux de Présence" value={`${computed.presenceRate}%`} icon={CheckCircle2} color="purple" />
+        {!isFinanceDisabled && <StatCard title="Recettes Réalisées" value={`${computed.totalPaid.toLocaleString()} DH`} icon={Wallet} color="green" />}
+        {!isFinanceDisabled && <StatCard title="Restes à Recouvrir" value={`${Math.max(0, computed.totalDue - computed.totalPaid).toLocaleString()} DH`} icon={TrendingDown} color="amber" />}
+        {!isAttendanceDisabled && <StatCard title="Taux de Présence" value={`${computed.presenceRate}%`} icon={CheckCircle2} color="purple" />}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+      <div className={cn("grid grid-cols-1 gap-6", chartsGridClass)}>
+        {!isFinanceDisabled && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
           <div className="mb-6">
              <h3 className="text-lg font-bold text-black flex items-center gap-2">
                <Wallet className="w-4 h-4 text-gray-400" />
@@ -227,10 +243,11 @@ export const Dashboard = ({ user }: { user: any }) => {
                   </PieChart>
                </ResponsiveContainer>
              ) : (
-               <p className="text-center text-sm text-gray-400 mt-4">Aucune donnée financière</p>
+               <p className="text-center text-sm text-gray-400 mt-4">Aucune donnée financière.</p>
              )}
           </div>
         </div>
+        )}
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
              <h3 className="font-bold text-black mb-4">Statuts des Étudiants</h3>
@@ -246,50 +263,54 @@ export const Dashboard = ({ user }: { user: any }) => {
              </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-             <h3 className="font-bold text-black mb-4">Rôles Personnel</h3>
-             <div className="flex-1 min-h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={computed.staffRoleData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} fontSize={10} />
-                      <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
-                      <RechartsTooltip cursor={{fill: '#f8fafc'}} />
-                   </BarChart>
-                </ResponsiveContainer>
-             </div>
-        </div>
+        {!isStaffDisabled && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+               <h3 className="font-bold text-black mb-4">Rôles Personnel</h3>
+               <div className="flex-1 min-h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                     <BarChart data={computed.staffRoleData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} fontSize={10} />
+                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
+                        <RechartsTooltip cursor={{fill: '#f8fafc'}} />
+                     </BarChart>
+                  </ResponsiveContainer>
+               </div>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-           <h3 className="font-bold text-black mb-6 flex items-center gap-2">
-             <List className="w-5 h-5 text-gray-400" />
-             Top 5 Académique (Filtré)
-           </h3>
-           <div className="space-y-4">
-              {raw.students
-                .filter((s:any) => filterFiliere === 'all' || s.program === filterFiliere)
-                .sort((a:any, b:any) => (parseFloat(b.average) || 0) - (parseFloat(a.average) || 0))
-                .slice(0, 5)
-                .map((s:any, i:number) => (
-                  <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                       <span className="text-xs font-black text-blue-600 w-4">{i+1}.</span>
-                       <div>
-                          <p className="text-sm font-bold text-black">{s.name}</p>
-                          <p className="text-[10px] text-gray-500">{s.program}</p>
-                       </div>
+      <div className={cn("grid grid-cols-1 gap-6", isNotesDisabled ? "" : "lg:grid-cols-2")}>
+        {!isNotesDisabled && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+             <h3 className="font-bold text-black mb-6 flex items-center gap-2">
+               <List className="w-5 h-5 text-gray-400" />
+               Top 5 Académique (Filtré)
+             </h3>
+             <div className="space-y-4">
+                {raw.students
+                  .filter((s:any) => filterFiliere === 'all' || s.program === filterFiliere)
+                  .sort((a:any, b:any) => (parseFloat(b.average) || 0) - (parseFloat(a.average) || 0))
+                  .slice(0, 5)
+                  .map((s:any, i:number) => (
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                         <span className="text-xs font-black text-blue-600 w-4">{i+1}.</span>
+                         <div>
+                            <p className="text-sm font-bold text-black">{s.name}</p>
+                            <p className="text-[10px] text-gray-500">{s.program}</p>
+                         </div>
+                      </div>
+                      <span className="text-sm font-black text-black bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">
+                        {parseFloat(s.average || 0).toFixed(1)}/20
+                      </span>
                     </div>
-                    <span className="text-sm font-black text-black bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">
-                      {parseFloat(s.average || 0).toFixed(1)}/20
-                    </span>
-                  </div>
-                ))}
-              {raw.students.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Aucun étudiant classé</p>}
-           </div>
-        </div>
+                  ))}
+                {raw.students.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Aucun étudiant classé</p>}
+             </div>
+          </div>
+        )}
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
            <h3 className="font-bold text-black mb-6 flex items-center gap-2">
@@ -303,33 +324,35 @@ export const Dashboard = ({ user }: { user: any }) => {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="mb-6 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <List className="w-5 h-5 text-gray-400" />
-              <div>
-                <h2 className="text-lg font-bold text-black">Filières Actives</h2>
-                <p className="text-xs text-gray-500 mt-1">Liste des programmes configurés</p>
+      {!isAcademicDisabled && (
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="mb-6 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <List className="w-5 h-5 text-gray-400" />
+                <div>
+                  <h2 className="text-lg font-bold text-black">Filières Actives</h2>
+                  <p className="text-xs text-gray-500 mt-1">Liste des programmes configurés</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {raw.filieres.filter((f:any) => filterFiliere === 'all' || f.name === filterFiliere).map((f: any) => (
-              <div 
-                key={f.id} 
-                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                  {f.code || f.name.substring(0, 2).toUpperCase()}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {raw.filieres.filter((f:any) => filterFiliere === 'all' || f.name === filterFiliere).map((f: any) => (
+                <div 
+                  key={f.id} 
+                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                    {f.code || f.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-black text-sm">{f.name}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">{f.studentCount || 0} Étudiant(s)</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-black text-sm">{f.name}</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">{f.studentCount || 0} Étudiant(s)</p>
-                </div>
-              </div>
-            ))}
-          </div>
-      </div>
+              ))}
+            </div>
+        </div>
+      )}
     </div>
   );
 };

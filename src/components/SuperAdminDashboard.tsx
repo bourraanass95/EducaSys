@@ -29,12 +29,14 @@ import {
   RefreshCcw,
   Trash,
   Info,
-  LogOut
+  LogOut,
+  Sliders
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, dedupeById } from '../lib/utils';
+import { PLANS, ALL_FEATURES } from '../constants';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
@@ -66,6 +68,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
   const [editingRequest, setEditingRequest] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [planFilter, setPlanFilter] = useState('All');
   const [sortBy, setSortBy] = useState<'alphabet' | 'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isWiping, setIsWiping] = useState(false);
@@ -90,6 +93,8 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
     phone: '',
     address: '',
     status: 'Active',
+    plan: 'free',
+    selectedFeatures: [] as string[],
     adminEmail: '',
     adminPassword: '',
     adminUserId: ''
@@ -104,6 +109,10 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
   const isSuperSuperAdmin = user?.isSuperAdmin || user?.email === 'anassbourra.1995@gmail.com';
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState<any>(null);
+
+  // Feature settings state
+  const [selectedSchoolForFeatures, setSelectedSchoolForFeatures] = useState<any>(null);
+  const [disabledFeatures, setDisabledFeatures] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
@@ -210,6 +219,10 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
       if (editingSchool) {
         // Update School (could be in schools or deleted_schools)
         const collection = editingSchool.deletedAt ? 'deleted_schools' : 'schools';
+        const planObj = Object.values(PLANS).find(p => p.id === schoolForm.plan);
+        const enabled = schoolForm.plan === 'custom' ? schoolForm.selectedFeatures : (planObj ? planObj.enabledFeatures : ALL_FEATURES);
+        const disabled = ALL_FEATURES.filter(f => !enabled.includes(f));
+
         await api.updateGeneric(collection, editingSchool.id, {
           name: schoolForm.name,
           subdomain: schoolForm.subdomain,
@@ -218,7 +231,9 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
           email: schoolForm.email,
           phone: schoolForm.phone,
           address: schoolForm.address,
-          status: schoolForm.status
+          status: schoolForm.status,
+          plan: schoolForm.plan,
+          disabledFeatures: disabled
         });
 
         // Update Admin User if exists
@@ -234,6 +249,10 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
         }
       } else {
         // 1. Create School
+        const planObj = Object.values(PLANS).find(p => p.id === schoolForm.plan);
+        const enabled = schoolForm.plan === 'custom' ? schoolForm.selectedFeatures : (planObj ? planObj.enabledFeatures : ALL_FEATURES);
+        const disabled = ALL_FEATURES.filter(f => !enabled.includes(f));
+
         const schoolId = await api.addGeneric('schools', { 
           name: schoolForm.name,
           subdomain: schoolForm.subdomain,
@@ -243,6 +262,8 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
           phone: schoolForm.phone,
           address: schoolForm.address,
           status: schoolForm.status,
+          plan: schoolForm.plan,
+          disabledFeatures: disabled,
           createdAt: new Date().toISOString() 
         });
 
@@ -258,7 +279,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
       }
       setShowAddModal(false);
       setEditingSchool(null);
-      setSchoolForm({ name: '', subdomain: '', firstName: '', lastName: '', email: '', phone: '', address: '', status: 'Active', adminEmail: '', adminPassword: '', adminUserId: '' });
+      setSchoolForm({ name: '', subdomain: '', firstName: '', lastName: '', email: '', phone: '', address: '', status: 'Active', plan: 'free', selectedFeatures: [], adminEmail: '', adminPassword: '', adminUserId: '' });
       loadData();
     } catch (e) {
       console.error(e);
@@ -333,6 +354,8 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
       phone: initialData?.phone || '', 
       address: '', 
       status: 'Active',
+      plan: 'free',
+      selectedFeatures: [],
       adminEmail: domain ? `${prefix}@${domain}.edu` : '',
       adminPassword: Math.random().toString(36).slice(-8),
       adminUserId: ''
@@ -620,6 +643,8 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
         phone: school.phone || '', 
         address: school.address || '', 
         status: school.status || 'Active',
+        plan: school.plan || 'free',
+        selectedFeatures: school.disabledFeatures ? ALL_FEATURES.filter(f => !school.disabledFeatures.includes(f)) : (Object.values(PLANS).find(p => p.id === school.plan)?.enabledFeatures || []),
         adminEmail: admin ? admin.email : '',
         adminPassword: '', // Leave empty unless changing
         adminUserId: admin ? admin.id : ''
@@ -633,11 +658,45 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
     }
   };
 
+  const openFeatureSettings = (school: any) => {
+    setSelectedSchoolForFeatures(school);
+    setDisabledFeatures(school.disabledFeatures || []);
+  };
+
+  const handleToggleFeature = (featureId: string) => {
+    setDisabledFeatures(prev => {
+      if (prev.includes(featureId)) {
+        return prev.filter(id => id !== featureId);
+      } else {
+        return [...prev, featureId];
+      }
+    });
+  };
+
+  const handleSaveFeatures = async () => {
+    if (!selectedSchoolForFeatures) return;
+    setLoading(true);
+    try {
+      await api.updateGeneric('schools', selectedSchoolForFeatures.id, {
+        disabledFeatures: disabledFeatures
+      });
+      showToast('Fonctionnalités mises à jour avec succès');
+      setSelectedSchoolForFeatures(null);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      showToast('Erreur lors de l\'enregistrement des fonctionnalités', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredSchools = schools
     .filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.subdomain.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = filterStatus === 'All' || s.status === filterStatus;
-      return matchesSearch && matchesStatus;
+      const matchesPlan = planFilter === 'All' || (s.plan || 'free') === planFilter;
+      return matchesSearch && matchesStatus && matchesPlan;
     })
     .sort((a, b) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
@@ -836,18 +895,31 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                          <span className="text-[10px] font-black uppercase tracking-widest italic hidden md:block">Filtrer</span>
                       </button>
                       <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 hidden group-hover:block z-50">
-                         {['All', 'Active', 'Suspended', 'Deployment'].map(st => (
-                           <button 
-                             key={st}
-                             onClick={() => setFilterStatus(st)}
-                             className={cn(
-                               "block w-full text-left px-4 py-2 text-sm rounded-xl transition-all",
-                               filterStatus === st ? "bg-blue-50 text-blue-600 font-bold" : "text-gray-600 hover:bg-gray-50"
-                             )}>
-                             {st === 'All' ? 'Tous les statuts' : st}
-                           </button>
-                         ))}
-                      </div>
+                          <label className="text-[10px] font-black uppercase text-gray-400 p-2 block">Statut</label>
+                          {['All', 'Active', 'Suspended', 'Deployment'].map(st => (
+                            <button 
+                              key={st}
+                              onClick={() => setFilterStatus(st)}
+                              className={cn(
+                                "block w-full text-left px-4 py-2 text-sm rounded-xl transition-all",
+                                filterStatus === st ? "bg-blue-50 text-blue-600 font-bold" : "text-gray-600 hover:bg-gray-50"
+                              )}>
+                              {st === 'All' ? 'Tous les statuts' : st}
+                            </button>
+                          ))}
+                          <label className="text-[10px] font-black uppercase text-gray-400 p-2 block mt-4 border-t border-gray-100">Plan</label>
+                          {['All', ...Object.values(PLANS).map(p => p.id)].map(p => (
+                            <button 
+                              key={p}
+                              onClick={() => setPlanFilter(p)}
+                              className={cn(
+                                "block w-full text-left px-4 py-2 text-sm rounded-xl transition-all",
+                                planFilter === p ? "bg-indigo-50 text-indigo-600 font-bold" : "text-gray-600 hover:bg-gray-50"
+                              )}>
+                              {p === 'All' ? 'Tous les plans' : Object.values(PLANS).find(pl => pl.id === p)?.name}
+                            </button>
+                          ))}
+                       </div>
                    </div>
                  </div>
               </div>
@@ -858,6 +930,7 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                 <thead className="bg-gray-50/80">
                   <tr>
                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Établissement</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Plan</th>
                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Paiement Mensuel</th>
                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Sous-domaine</th>
                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Statut Système</th>
@@ -890,6 +963,11 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                               </div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <div className="text-[10px] font-black text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full inline-block italic">
+                             {Object.values(PLANS).find(p => p.id === school.plan)?.name || 'N/A'}
+                           </div>
                         </td>
                         <td className="px-8 py-6">
                            {school.paymentAlertStatus === 'paid' ? (
@@ -954,6 +1032,14 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                         </td>
                          <td className="px-8 py-6 text-right">
                            <div className="flex items-center justify-end gap-2">
+                             <button 
+                               type="button"
+                               title="Gérer les fonctionnalités"
+                               onClick={() => openFeatureSettings(school)}
+                               className="p-3 bg-white hover:bg-amber-50 border border-gray-100 rounded-2xl text-gray-400 hover:text-amber-600 transition-all shadow-sm"
+                             >
+                               <Sliders className="w-4 h-4" />
+                             </button>
                              <button 
                                type="button"
                                onClick={() => openEditModal(school)}
@@ -1389,6 +1475,57 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                           }}
                         />
                      </div>
+                     <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest italic ml-4 leading-none">Plan Abonnement</label>
+                        <select 
+                          required
+                          className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-[24px] outline-none font-bold text-sm transition-all shadow-inner"
+                          value={schoolForm.plan || 'free'}
+                          onChange={e => {
+                            const plan = e.target.value;
+                            setSchoolForm({...schoolForm, plan, selectedFeatures: plan === 'custom' ? [] : (Object.values(PLANS).find(p => p.id === plan)?.enabledFeatures || [])});
+                          }}
+                        >
+                          {Object.values(PLANS).map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                        {schoolForm.plan === 'custom' && (
+                          <div className="grid grid-cols-1 gap-4 mt-4 p-6 bg-gray-50 rounded-2xl">
+                             {[
+                                { id: 'notes', name: "Gestion des Notes & Bulletins", desc: "Gestion des notes, saisie des moyennes et édition de bulletins." },
+                                { id: 'attendance', name: "Absences & Présences", desc: "Gestion de l’appel par séance et statistiques d’assiduité." },
+                                { id: 'finance', name: "Finance & Facturation", desc: "Suivi de facturation, paiements et recettes scolaires." },
+                                { id: 'academic', name: "Structure Scolaire", desc: "Configuration des filières, classes, matières et coefficients." },
+                                { id: 'students', name: "Base Étudiants", desc: "Fiches détaillées des étudiants, inscriptions et dossiers scolaires." },
+                                { id: 'schedule', name: "Emplois du temps", desc: "Planification horaire des cours, gestion des salles et créneaux." },
+                                { id: 'library', name: "Bibliothèque Digitale", desc: "Inventaire des livres de la bibliothèque, emprunts et e-learning." },
+                                { id: 'teachers', name: "Gestion des Enseignants", desc: "Profils des professeurs, matières assignées et attributions." },
+                                { id: 'staff', name: "Gestion du Personnel", desc: "Rôles administratifs et gestion des collaborateurs de l’école." },
+                                { id: 'director-bi', name: "Analyses BI", desc: "Statistiques consolidées de l'école et analyses de performances." },
+                                { id: 'internships', name: "Gestion de Stages", desc: "Suivi des offres, tuteurs, soutenances et stages professionnels." }
+                             ].map(feature => (
+                               <label key={feature.id} className="flex gap-3 bg-white p-4 rounded-xl shadow-sm cursor-pointer hover:bg-blue-50 transition-all border border-transparent hover:border-blue-200">
+                                 <input 
+                                   type="checkbox"
+                                   className="mt-1 h-4 w-4 text-blue-600 rounded"
+                                   checked={schoolForm.selectedFeatures.includes(feature.id)}
+                                   onChange={e => {
+                                     const features = e.target.checked 
+                                      ? [...schoolForm.selectedFeatures, feature.id] 
+                                      : schoolForm.selectedFeatures.filter(f => f !== feature.id);
+                                     setSchoolForm({...schoolForm, selectedFeatures: features});
+                                   }}
+                                 />
+                                 <div>
+                                   <div className="text-sm font-bold text-gray-900 capitalize">{feature.name}</div>
+                                   <div className="text-xs font-medium text-gray-400 mt-1">{feature.desc}</div>
+                                 </div>
+                               </label>
+                             ))}
+                          </div>
+                        )}
+                     </div>
 
                      <div className="p-6 bg-gray-50 rounded-[32px] border border-gray-100 space-y-6">
                         <div className="col-span-2">
@@ -1792,6 +1929,83 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user?: any, onLogout?:
                     </button>
                   </div>
                 </form>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedSchoolForFeatures && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 20 }}
+               className="bg-white rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border border-white"
+             >
+                <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black uppercase italic">Gérer les <span className="text-amber-500">Fonctions</span></h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1 italic">{selectedSchoolForFeatures.name}</p>
+                  </div>
+                  <button onClick={() => setSelectedSchoolForFeatures(null)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="p-8 space-y-6">
+                  <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                    Sélectionnez les services que vous souhaitez activer ou désactiver pour cet établissement. Les fonctionnalités désactivées seront masquées du tableau de bord de l'école ainsi que de son menu de navigation.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {[
+                      { id: 'notes', name: 'Gestion des Notes & Bulletins', desc: 'Gestion des notes, saisie des moyennes et édition de bulletins.' },
+                      { id: 'attendance', name: 'Absences & Présences', desc: 'Gestion de l’appel par séance et statistiques d’assiduité.' },
+                      { id: 'finance', name: 'Finance & Facturation', desc: 'Suivi de facturation, paiements et recettes scolaires.' },
+                      { id: 'academic', name: 'Structure Scolaire', desc: 'Configuration des filières, classes, matières et coefficients.' },
+                      { id: 'students', name: 'Base Étudiants', desc: 'Fiches détaillées des étudiants, inscriptions et dossiers scolaires.' },
+                      { id: 'schedule', name: 'Emplois du temps', desc: 'Planification horaire des cours, gestion des salles et créneaux.' },
+                      { id: 'library', name: 'Bibliothèque Digitale', desc: 'Inventaire des livres de la bibliothèque, emprunts et e-learning.' },
+                      { id: 'teachers', name: 'Gestion des Enseignants', desc: 'Profils des professeurs, matières assignées et attributions.' },
+                      { id: 'staff', name: 'Gestion du Personnel', desc: 'Rôles administratifs et gestion des collaborateurs de l’école.' },
+                      { id: 'director-bi', name: 'Analyses BI', desc: 'Statistiques consolidées de l\'école et analyses de performances.' },
+                      { id: 'internships', name: 'Gestion de Stages', desc: 'Suivi des offres, tuteurs, soutenances et stages professionnels.' }
+                    ].map((feature) => (
+                      <div key={feature.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100/50 transition-colors">
+                        <div className="flex-1 pr-3">
+                          <p className="text-xs font-bold text-gray-800">{feature.name}</p>
+                          <p className="text-[10px] text-gray-400 font-medium leading-tight mt-1">{feature.desc}</p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => handleToggleFeature(feature.id)}
+                          className={cn(
+                            "w-10 h-5 rounded-full p-0.5 transition-all duration-300 outline-none flex items-center shrink-0",
+                            disabledFeatures.includes(feature.id) ? "bg-gray-200 justify-start" : "bg-emerald-500 justify-end"
+                          )}
+                        >
+                          <motion.div layout className="w-4 h-4 rounded-full bg-white shadow-md" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-4 pt-4 border-t border-gray-50">
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedSchoolForFeatures(null)}
+                      className="flex-1 px-6 py-4 bg-gray-100 rounded-2xl font-black uppercase italic text-xs hover:bg-gray-200 transition-all"
+                    >
+                      Annuler
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={handleSaveFeatures}
+                      className="flex-1 px-6 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase italic text-xs hover:bg-amber-600 transition-all shadow-lg shadow-amber-200"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
              </motion.div>
           </div>
         )}

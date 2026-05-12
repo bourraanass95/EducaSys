@@ -14,10 +14,11 @@ import {
   Edit2,
   Trash2,
   Eye,
-  ArrowRight
+  ArrowRight,
+  AlertOctagon
 } from 'lucide-react';
 import { cn, dedupeById } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, 
   Bar, 
@@ -49,7 +50,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    type: 'Normal', // 'Normal' or 'StudentPayment'
+    type: 'Income', // 'Income' or 'Expense'
     studentId: '',
     studentName: '',
     amount: 0,
@@ -69,7 +70,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
   const openNewModal = () => {
     setEditingInvoice(null);
     setFormData({
-      type: 'Normal',
+      type: 'Income',
       studentId: '',
       studentName: '',
       amount: 0,
@@ -128,9 +129,9 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      // Find student name if it's a student payment
+      // Find student name if it's an Income payment
       let finalData: any = { ...formData };
-      if (formData.type === 'StudentPayment' && formData.studentId) {
+      if (formData.type === 'Income' && formData.studentId) {
         const student = students.find(s => s.id === formData.studentId);
         if (student) {
           finalData.studentName = student.name;
@@ -164,14 +165,17 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
     }
   };
 
-  const handleDeleteInvoice = async (id: string) => {
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
+
+  const handleDeleteInvoice = async () => {
+    if (!invoiceToDelete) return;
     try {
-      const inv = invoices.find(i => i.id === id);
-      await api.deleteInvoice(id);
+      const inv = invoices.find(i => i.id === invoiceToDelete);
+      await api.deleteInvoice(invoiceToDelete);
       
       if (inv) {
         await api.addGeneric('notifications', {
-          message: `Une facture importante a été supprimée (Référence: ${id}, Étudiant: ${inv.student || inv.studentName}, Montant: ${inv.amount} DH).`,
+          message: `Une facture importante a été supprimée (Référence: ${invoiceToDelete}, Étudiant: ${inv.student || inv.studentName}, Montant: ${inv.amount} DH).`,
           type: 'alert',
           targetRoles: ['Admin'],
           read: false,
@@ -180,6 +184,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
         }).catch(console.error);
       }
       
+      setInvoiceToDelete(null);
       await loadData();
     } catch (error) {
       console.error('Error deleting invoice:', error);
@@ -215,10 +220,10 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
     doc.setFontSize(12);
     doc.text(`Nom: ${invoice.studentName || invoice.student}`, 30, 95);
     
-    if (invoice.type === 'StudentPayment') {
-      doc.text('Type: Frais de Scolarité / Études', 30, 103);
+    if (invoice.type === 'Income') {
+      doc.text('Type: Revenu (Entrée)', 30, 103);
     } else {
-      doc.text('Type: Facture Administrative / Divers', 30, 103);
+      doc.text('Type: Dépense (Sortie)', 30, 103);
     }
     
     // Amount Box
@@ -396,7 +401,14 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
                     <tr key={invoice.id} className="group hover:bg-blue-50/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="text-sm font-black text-gray-900 uppercase italic tracking-tighter">{invoice.student}</div>
-                        <div className="text-[10px] text-gray-300">ID: {invoice.id}</div>
+                        <div className="flex gap-2 items-center">
+                          <div className="text-[10px] text-gray-300">ID: {invoice.id}</div>
+                          <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
+                             invoice.type === 'Income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                          )}>
+                             {invoice.type === 'Income' ? 'Revenu' : 'Dépense'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-black text-gray-900">{invoice.amount.toLocaleString()} DH</div>
@@ -446,7 +458,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
                           </button>
                           {canDelete && (
                             <button 
-                              onClick={() => handleDeleteInvoice(invoice.id)}
+                              onClick={() => setInvoiceToDelete(invoice.id)}
                               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all shadow-sm hover:shadow-red-50"
                               title="Supprimer"
                             >
@@ -572,12 +584,12 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
                     onChange={(e) => setFormData({...formData, type: e.target.value, studentId: '', studentName: ''})}
                     className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-2xl text-sm transition-all outline-none font-bold italic"
                   >
-                    <option value="Normal">Facture Normale</option>
-                    <option value="StudentPayment">Paiement Étudiant</option>
+                    <option value="Income">Revenu (Entrée)</option>
+                    <option value="Expense">Dépense (Sortie)</option>
                   </select>
                 </div>
 
-                {formData.type === 'StudentPayment' ? (
+                {formData.type === 'Income' ? (
                   <div className="col-span-2">
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 pl-2 italic">Étudiant</label>
                     <select 
@@ -668,6 +680,30 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {invoiceToDelete && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setInvoiceToDelete(null)} className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col p-8 text-center items-center">
+               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                 <AlertOctagon className="w-8 h-8 text-red-500" />
+               </div>
+               <h2 className="text-xl font-black text-gray-900 mb-2">Supprimer la facture ?</h2>
+               <p className="text-sm text-gray-500 mb-8">Voulez-vous vraiment supprimer cette facture ? Cette action est irréversible.</p>
+               <div className="flex w-full gap-3">
+                 <button onClick={() => setInvoiceToDelete(null)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-colors">
+                   Annuler
+                 </button>
+                 <button onClick={handleDeleteInvoice} className="flex-1 py-4 bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600 shadow-lg shadow-red-200 transition-colors">
+                   Supprimer
+                 </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -29,6 +29,9 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user, isOpen, onC
     items: section.items.filter(item => {
       const roleMatch = item.roles.includes(activeRole);
       if (item.id === 'super-admin') return roleMatch && isSuperAdmin;
+      if (user?.disabledFeatures && Array.isArray(user.disabledFeatures) && user.disabledFeatures.includes(item.id)) {
+        return false;
+      }
       return roleMatch;
     })
   })).filter(section => section.items.length > 0);

@@ -45,3 +45,30 @@ export const NAVIGATION_SECTIONS = [
     ]
   }
 ];
+
+export const ALL_FEATURES = [
+  'academic', 'students', 'notes', 'attendance', 'teachers', 'finance', 'director-bi', 'library', 'schedule', 'staff', 'internships'
+];
+
+export const PLANS = {
+  FREE: {
+    id: 'free',
+    name: 'Free',
+    enabledFeatures: ['academic', 'students']
+  },
+  STARTER: {
+    id: 'starter',
+    name: 'Starter',
+    enabledFeatures: ['academic', 'students', 'notes', 'attendance', 'teachers']
+  },
+  PROFESSIONAL: {
+    id: 'professional',
+    name: 'Professional',
+    enabledFeatures: ['academic', 'students', 'notes', 'attendance', 'teachers', 'finance', 'director-bi', 'library', 'schedule', 'staff', 'internships']
+  },
+  CUSTOM: {
+    id: 'custom',
+    name: 'Sur-mesure',
+    enabledFeatures: ALL_FEATURES
+  }
+};

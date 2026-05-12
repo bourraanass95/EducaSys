@@ -511,68 +511,33 @@ export const GlobalHome = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
             <h2 className="text-5xl md:text-7xl font-display font-black tracking-tighter mb-8 text-black uppercase italic">Un Écosystème <br /> Sans Limites.</h2>
-            <p className="text-gray-500 max-w-xl mx-auto font-medium text-lg italic">Oubliez les logiciels complexes. EducaSys est intuitif, rapide et diablement efficace.</p>
+            <p className="text-gray-500 max-w-xl mx-auto font-medium text-lg italic">Oubliez les logiciels complexes. EducaSys regroupe tout ce dont a besoin une école moderne.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-6 md:grid-rows-2 gap-8 h-auto">
-            {/* Main Feature - Large */}
-            <motion.div 
-              whileHover={{ y: -10 }}
-              className="md:col-span-3 md:row-span-1 p-10 bg-gray-900 rounded-[48px] text-white flex flex-col justify-between group overflow-hidden relative"
-            >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] group-hover:bg-blue-600/40 transition-all" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-2xl shadow-blue-500/40">
-                  <BarChart3 className="w-8 h-8" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { title: "Structuration Scolaire", desc: "Configuration des filières, classes, matières et coefficients." },
+              { title: "Base Étudiants", desc: "Fiches détaillées des étudiants, inscriptions et dossiers scolaires." },
+              { title: "Gestion des Notes", desc: "Gestion des notes, saisie des moyennes et édition de bulletins." },
+              { title: "Absences & Présences", desc: "Gestion de l’appel par séance et statistiques d’assiduité." },
+              { title: "Gestion Enseignants", desc: "Profils des professeurs, matières assignées et attributions." },
+              { title: "Finance & Facturation", desc: "Suivi de facturation, paiements et recettes scolaires." },
+              { title: "Analyse BI", desc: "Statistiques consolidées et analyses de performances." },
+              { title: "Bibliothèque", desc: "Inventaire des livres, emprunts et e-learning." },
+              { title: "Emplois du temps", desc: "Planification horaire des cours, gestion des salles." }
+            ].map((f, i) => (
+              <motion.div 
+                key={i}
+                whileHover={{ y: -10 }}
+                className="p-10 bg-white border border-gray-100 rounded-[48px] shadow-sm hover:shadow-xl transition-all"
+              >
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8">
+                   <BookOpen className="w-8 h-8" />
                 </div>
-                <h3 className="text-4xl font-black italic tracking-tighter mb-4 uppercase">Finance <br /> Master Pro</h3>
-                <p className="text-gray-400 text-lg font-medium leading-relaxed max-w-xs italic">Encaissements, restes à payer, facturation automatique. Gardez le contrôle total sur votre cashflow.</p>
-              </div>
-              <div className="mt-12 flex items-center gap-4 border-t border-white/5 pt-8">
-                 <div className="px-4 py-2 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-400">Automatisation 100%</div>
-              </div>
-            </motion.div>
-
-            {/* Feature 2 - Small */}
-            <motion.div 
-               whileHover={{ y: -10 }}
-               className="md:col-span-3 md:row-span-1 p-10 bg-white border border-gray-100 rounded-[48px] shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
-            >
-              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-8">
-                 <Trophy className="w-8 h-8" />
-              </div>
-              <h3 className="text-3xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">Bulletins & Exams</h3>
-              <p className="text-gray-500 font-medium italic">Génération instantanée de bulletins PDF sécurisés. Algorithme de calcul de moyennes certifié.</p>
-              <ArrowRight className="absolute bottom-10 right-10 w-8 h-8 text-gray-200 group-hover:text-blue-600 group-hover:translate-x-2 transition-all" />
-            </motion.div>
-
-            {/* Feature 3 - Small */}
-            <motion.div 
-               whileHover={{ y: -10 }}
-               className="md:col-span-2 md:row-span-1 p-10 bg-blue-600 rounded-[48px] text-white group"
-            >
-              <Users className="w-12 h-12 mb-8 text-blue-200" />
-              <h3 className="text-2xl font-black italic tracking-tight mb-4 uppercase">Staff & RH</h3>
-              <p className="text-blue-100 font-medium text-sm italic">Gérez vos professeurs, leurs emplois du temps et leur performance en quelques clics.</p>
-            </motion.div>
-
-            {/* Feature 4 - Horizontal Wide */}
-            <motion.div 
-               whileHover={{ y: -10 }}
-               className="md:col-span-4 md:row-span-1 p-10 bg-gray-50 rounded-[48px] flex flex-col md:flex-row items-center gap-10 group"
-            >
-              <div className="flex-1">
-                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-gray-900 shadow-sm mb-6">
-                    <Smartphone className="w-7 h-7" />
-                 </div>
-                 <h3 className="text-3xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">Mobilité EducaSys</h3>
-                 <p className="text-gray-500 font-medium text-sm italic">Vos parents suivent les absences et les résultats de leurs enfants en temps réel sur mobile.</p>
-              </div>
-              <div className="flex-1 bg-white p-6 rounded-3xl border border-gray-100 shadow-inner -rotate-3 group-hover:rotate-0 transition-transform">
-                 <div className="h-4 bg-gray-100 w-32 rounded mb-4" />
-                 <div className="h-40 bg-blue-50 rounded-2xl" />
-              </div>
-            </motion.div>
+                <h3 className="text-2xl font-black italic tracking-tighter mb-4 uppercase text-gray-900">{f.title}</h3>
+                <p className="text-gray-500 font-medium italic">{f.desc}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -654,26 +619,32 @@ export const GlobalHome = () => {
             <p className="text-gray-500 font-medium italic">Une tarification transparente, sans frais cachés.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[
+              {
+                name: "Free",
+                price: "0",
+                desc: "Pour débuter.",
+                features: ["Structuration Scolaire", "Base Étudiants", "Jusqu'à 50 étudiants"]
+              },
               { 
                 name: "Starter", 
-                price: "990", 
-                desc: "Idéal pour les petites écoles primaires.",
-                features: ["Jusqu'à 150 élèves", "Gestion financière de base", "Bulletins standards", "Support Email"]
+                price: "399", 
+                desc: "Idéal pour booster votre gestion.",
+                features: ["Tout le plan Free", "Notes & Bulletins", "Absences & Présences", "Gestion des Enseignants"]
               },
               { 
                 name: "Professional", 
-                price: "1,990", 
+                price: "799", 
                 popular: true,
-                desc: "La solution préférée des collèges et lycées.",
-                features: ["Jusqu'à 600 élèves", "Finance & Facturation Avancée", "Espace Parents Mobile", "Support Téléphonique 6j/7"]
+                desc: "Pour une gestion complète.",
+                features: ["Tout le plan Starter", "Finance & Facturation", "Analyse BI (Reporting)", "Bibliothèque", "Emplois du temps"]
               },
               { 
-                name: "Enterprise", 
-                price: "Sur mesure", 
-                desc: "Pour les groupes scolaires multi-sites.",
-                features: ["Élèves illimités", "Multi-campus centralisé", "API & Intégrations sur mesure", "Conseiller dédié 7j/7"]
+                name: "Sur-mesure", 
+                price: "Devis", 
+                desc: "Fonctionnalités spécifiques.",
+                features: ["Besoins spécifiques", "Configuration personnalisée", "Support dédié"]
               }
             ].map((plan, i) => (
               <div key={i} className={`p-10 rounded-[48px] flex flex-col ${plan.popular ? 'bg-blue-600 text-white shadow-2xl scale-105 z-10' : 'bg-white border border-gray-100 shadow-sm'}`}>
@@ -683,7 +654,7 @@ export const GlobalHome = () => {
                 </div>
                 <div className="mb-8 leading-none">
                   <span className="text-5xl font-black italic tracking-tighter">{plan.price}</span>
-                  {plan.price.includes(',') || plan.price.match(/\d/) ? <span className="text-sm font-bold uppercase ml-2 opacity-60">DH / mois</span> : null}
+                  {plan.price !== "Devis" ? <span className="text-sm font-bold uppercase ml-2 opacity-60">DH / mois</span> : null}
                 </div>
                 <div className="space-y-4 mb-10 flex-1">
                   {plan.features.map(f => (
