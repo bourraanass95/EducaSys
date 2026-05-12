@@ -265,7 +265,8 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
         const date = new Date(invoice.date);
         if (date.getFullYear() === currentYear) {
           const monthIndex = date.getMonth();
-          data[monthIndex].amount += Number(invoice.amount || 0);
+          const amount = Number(invoice.amount || 0);
+          data[monthIndex].amount += invoice.type === 'Expense' ? -amount : amount;
         }
       }
     });
@@ -276,6 +277,24 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
   };
 
   const revenueData = getRevenueByMonth();
+  
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const calculateRevenueThisMonth = () => {
+    return invoices.reduce((acc, invoice) => {
+      if (invoice.status === 'Paid') {
+        const date = new Date(invoice.date);
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+          const amount = Number(invoice.amount || 0);
+          return invoice.type === 'Expense' ? acc - amount : acc + amount;
+        }
+      }
+      return acc;
+    }, 0);
+  };
+
+  const revenueThisMonth = calculateRevenueThisMonth();
 
   if (loading) {
     return (
@@ -309,7 +328,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Revenus ce mois</p>
               <span className="text-green-600 text-[10px] font-black bg-green-50 px-2 py-0.5 rounded-full">+100%</span>
             </div>
-            <p className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter">{stats?.revenueThisMonth.toLocaleString()} DH</p>
+            <p className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter">{revenueThisMonth.toLocaleString()} DH</p>
             <div className="h-40 mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueData}>
