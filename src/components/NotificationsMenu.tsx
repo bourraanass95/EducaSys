@@ -10,6 +10,7 @@ export const NotificationsMenu = ({ activeRole, user }: { activeRole: UserRole, 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
+    if (!user?.schoolId) return;
     try {
       const allNotifs = await api.getGenericCollection('notifications', user?.schoolId).catch(() => []);
       
@@ -27,7 +28,7 @@ export const NotificationsMenu = ({ activeRole, user }: { activeRole: UserRole, 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000); // 30s polling
     return () => clearInterval(interval);
-  }, [activeRole, user]);
+  }, [activeRole, user?.schoolId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

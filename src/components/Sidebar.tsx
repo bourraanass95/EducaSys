@@ -51,7 +51,7 @@ export const Sidebar = ({ activeTab, setActiveTab, activeRole, user, isOpen, onC
       </AnimatePresence>
 
       <aside className={cn(
-        "bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-[70]",
+        "bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 transition-all duration-300 z-[70] print:hidden",
         "fixed lg:sticky top-0 left-0 bottom-0",
         isCollapsed ? "w-20" : "w-64",
         isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"

@@ -72,12 +72,13 @@ export const Students = ({ activeRole, user }: StudentsProps) => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user?.schoolId]);
 
   const loadData = async () => {
+    const schoolId = user?.schoolId;
+    if (!schoolId) return;
     setLoading(true);
     try {
-      const schoolId = user?.schoolId;
       const [studentsData, filieresData, invoicesData] = await Promise.all([
         api.getStudents(schoolId).catch(err => []),
         api.getFilieres(schoolId).catch(err => []),

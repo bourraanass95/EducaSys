@@ -199,6 +199,26 @@ export const SchoolProfile = ({ user, onUpdate }: SchoolProfileProps) => {
           </div>
         </div>
       </div>
+
+      <div className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-50 mt-8">
+        <h3 className="text-lg font-black text-gray-900 mb-2 uppercase italic tracking-tight">Modèles de documents</h3>
+        <p className="text-sm font-medium text-gray-500 mb-8">Uploadez vos propres modèles pour les bulletins, certificats, reçus... Le système incrustera automatiquement les données (notes, informations, etc.) sur ces fonds d'écran ou canvas lors de l'impression ou de la génération.</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-6 border-2 border-dashed border-gray-200 rounded-3xl text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative">
+               <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*,.pdf" />
+               <div className="flex justify-center mb-4"><Camera className="w-8 h-8 text-blue-400" /></div>
+               <h4 className="font-bold text-gray-900 mb-1">Modèle de bulletin (Fond)</h4>
+               <p className="text-xs text-gray-500">Uploader votre image de fond de bulletin</p>
+            </div>
+            <div className="p-6 border-2 border-dashed border-gray-200 rounded-3xl text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative">
+               <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*,.pdf" />
+               <div className="flex justify-center mb-4"><Camera className="w-8 h-8 text-blue-400" /></div>
+               <h4 className="font-bold text-gray-900 mb-1">Certificat de Scolarité</h4>
+               <p className="text-xs text-gray-500">Modèle pour certificat</p>
+            </div>
+        </div>
+      </div>
       
       <div className="bg-amber-50 rounded-[40px] p-6 border border-amber-100 flex gap-4 items-center text-amber-900">
         <AlertCircle className="w-10 h-10 text-amber-600 shrink-0" />

@@ -157,12 +157,6 @@ export const Login = ({ onLogin }: LoginProps) => {
           </form>
           
           <div className="mt-10 pt-10 border-t border-gray-50 flex flex-col items-center gap-4">
-             <Link 
-               to="/superadmincnx"
-               className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors italic flex items-center gap-2"
-             >
-               Accès Panel Global <Globe className="w-3 h-3" />
-             </Link>
           </div>
         </div>
         

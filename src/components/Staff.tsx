@@ -48,9 +48,10 @@ export const Staff = ({ activeRole, user }: StaffProps) => {
 
   useEffect(() => {
     loadStaff();
-  }, []);
+  }, [user?.schoolId]);
 
   const loadStaff = async () => {
+    if (!user?.schoolId) return;
     setLoading(true);
     try {
       const data = await api.getStaff(user?.schoolId);

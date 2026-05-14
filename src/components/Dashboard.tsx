@@ -63,8 +63,10 @@ export const Dashboard = ({ user }: { user: any }) => {
 
   useEffect(() => {
     const loadData = async () => {
+      const schoolId = user?.schoolId;
+      if (!schoolId) return;
+      setLoading(true);
       try {
-        const schoolId = user?.schoolId;
         const [studentsRes, usersRes, structuresRes, filieresRes, attendanceRes, invoicesRes] = await Promise.all([
           api.getStudents(schoolId).catch(() => []),
           api.getGenericCollection('users', schoolId).catch(() => []),
@@ -93,7 +95,7 @@ export const Dashboard = ({ user }: { user: any }) => {
       }
     };
     loadData();
-  }, []);
+  }, [user?.schoolId]);
 
   const computed = useMemo(() => {
     const fStudents = raw.students.filter((s:any) => filterFiliere === 'all' || s.program === filterFiliere);

@@ -38,11 +38,12 @@ export const Academic = ({ activeRole, user }: AcademicProps) => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user?.schoolId]);
 
   const loadData = async () => {
+    const schoolId = user?.schoolId;
+    if (!schoolId) return;
     try {
-      const schoolId = user?.schoolId;
       const [structs, loadedFilieres, loadedStudents, loadedTeachers] = await Promise.all([
         api.getGenericCollection('structures', schoolId).catch(() => []),
         api.getFilieres(schoolId).catch(() => []),

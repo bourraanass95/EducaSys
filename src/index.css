@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;700;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;700;900&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -9,13 +9,13 @@
   /* Custom Brand Colors */
   --color-brand-bg: var(--brand-bg);
   --color-brand-text: var(--brand-text);
-  --color-brand-accent: #3B82F6;
+  --color-brand-accent: #3b82f6;
   --color-brand-glass: var(--brand-glass);
   --color-brand-border: var(--brand-border);
 }
 
 :root {
-  --brand-bg: #FAFAFA;
+  --brand-bg: #fafafa;
   --brand-text: #000000;
   --brand-glass: rgba(0, 0, 0, 0.03);
   --brand-border: rgba(0, 0, 0, 0.05);
@@ -27,10 +27,99 @@
   }
 }
 
+@media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: transparent !important;
+  }
+
+  /* Core UI elements to hide */
+  .print-hide,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset layout constraints to ensure things fit cleanly */
+  .print-full-page {
+    width: 100% !important;
+    height: auto !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure scrolling containers don't hide contents */
+  .print-no-scroll,
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Avoid awkward page breaks for cards and tables */
+  table,
+  tr,
+  td,
+  th,
+  .break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Ensure background colors stay intact */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Convert shadows to borders for better print legibility */
+  .shadow-xl,
+  .shadow-lg,
+  .shadow-md,
+  .shadow-sm,
+  .shadow {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  /* Force tables to fit page width */
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+}
+
 @keyframes float {
-  0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(2deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(2deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
 }
 
 .animate-float {
@@ -38,8 +127,12 @@
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .animate-marquee {

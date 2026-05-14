@@ -54,8 +54,11 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
   const isTeachersDisabled = user?.disabledFeatures?.includes('teachers');
 
   useEffect(() => {
+    setSelectedFiliere('');
+    setSelectedTeacherId('');
+    setSelectedModuleId('');
     loadInitialData();
-  }, [user]);
+  }, [user?.schoolId]);
 
   useEffect(() => {
     if (selectedFiliere && selectedYear) {
@@ -68,8 +71,9 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
   }, [selectedFiliere, selectedYear, selectedDate]);
 
   const loadInitialData = async () => {
+    const schoolId = user?.schoolId;
+    if (!schoolId) return;
     try {
-      const schoolId = user?.schoolId;
       const [allFilieres, allStaff, modules] = await Promise.all([
         api.getFilieres(schoolId),
         api.getStaff(schoolId),
@@ -90,6 +94,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
   };
 
   const loadStudents = async () => {
+    if (!user?.schoolId) return;
     setLoading(true);
     try {
       const data = await api.getStudents(user?.schoolId);
@@ -103,6 +108,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
   };
 
   const loadAttendance = async () => {
+    if (!user?.schoolId) return;
     try {
       const data = await api.getGenericCollection('attendance', user?.schoolId);
       const unique = dedupeById(data);
@@ -370,9 +376,14 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
                 </>
               )}
               {activeTab === 'reports' && selectedFiliere && (
-                 <button onClick={() => setReportModal({isOpen: true, type: 'all', startDate: '', endDate: ''})} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-all shadow-lg shadow-green-100 whitespace-nowrap">
-                    <Download className="w-4 h-4" /> Rapport Global
-                 </button>
+                 <div className="flex gap-2">
+                   <button onClick={() => exportClassReport('', '')} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 whitespace-nowrap">
+                      <Download className="w-4 h-4" /> Télécharger Classe
+                   </button>
+                   <button onClick={() => setReportModal({isOpen: true, type: 'all', startDate: '', endDate: ''})} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-all shadow-lg shadow-green-100 whitespace-nowrap">
+                      <BarChartHorizontal className="w-4 h-4" /> Rapport Global
+                   </button>
+                 </div>
               )}
             </div>
           </div>
@@ -567,7 +578,7 @@ export const Attendance = ({ activeRole, user }: AttendanceProps) => {
                              <span className={cn("px-3 py-1 rounded-full text-xs font-bold", rate >= 80 ? "bg-green-100 text-green-700" : rate >= 50 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}>{rate}%</span>
                            </td>
                            <td className="px-6 py-4 text-right">
-                             <button onClick={() => exportStudentReport(student)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg inline-block"><FileText className="w-5 h-5" /></button>
+                             <button onClick={() => exportStudentReport(student)} className="flex items-center gap-2 px-3 py-2 text-blue-600 bg-blue-50 font-bold text-xs uppercase italic tracking-widest rounded-xl hover:bg-blue-100 transition-colors ml-auto"><Download className="w-4 h-4" /> Télécharger</button>
                            </td>
                          </tr>
                        );

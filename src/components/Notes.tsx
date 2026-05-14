@@ -49,8 +49,11 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   const canEdit = activeRole === 'Admin' || activeRole === 'Staff';
 
   useEffect(() => {
+    setSelectedFiliere('');
+    setSelectedYear('');
+    setSelectedModule('');
     loadInitialData();
-  }, [user]);
+  }, [user?.schoolId]);
 
   useEffect(() => {
     if (selectedFiliere && selectedYear) {
@@ -78,6 +81,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   }, [selectedFiliere, selectedYear, selectedModule]);
 
   const loadClassGrades = async () => {
+    if (!user?.schoolId) return;
     try {
       const allGrades = await api.getGenericCollection('notes_records', user?.schoolId);
       const relevantGrades = allGrades.filter((g: any) => 
@@ -92,6 +96,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   };
 
   const loadInitialData = async () => {
+    if (!user?.schoolId) return;
     try {
       const [fData, sData] = await Promise.all([
         api.getFilieres(user?.schoolId),
@@ -106,6 +111,7 @@ export const Notes = ({ activeRole, user }: NotesProps) => {
   };
 
   const loadStudents = async () => {
+    if (!user?.schoolId) return;
     setLoading(true);
     try {
       const allStudents = await api.getStudents(user?.schoolId);

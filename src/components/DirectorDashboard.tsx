@@ -83,8 +83,10 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
 
   useEffect(() => {
     const fetchData = async () => {
+      const schoolId = user?.schoolId;
+      if (!schoolId) return;
+      setLoading(true);
       try {
-        const schoolId = user?.schoolId;
         const [students, users, filieres, notes, attendances, invoices] = await Promise.all([
           api.getStudents(schoolId).catch(() => []),
           api.getGenericCollection('users', schoolId).catch(() => []),
@@ -109,7 +111,7 @@ export const DirectorDashboard = ({ user }: { user: any }) => {
       }
     };
     fetchData();
-  }, []);
+  }, [user?.schoolId]);
 
   const studentMap = useMemo(() => new Map(raw.students.map((s: any) => [s.id, s])), [raw.students]);
   const studentNameMap = useMemo(() => new Map(raw.students.map((s: any) => [s.name, s])), [raw.students]);

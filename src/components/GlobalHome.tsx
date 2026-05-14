@@ -114,13 +114,6 @@ export const GlobalHome = () => {
           </div>
 
            <div className="flex items-center gap-2 md:gap-4">
-            <Link 
-              to="/superadmincnx" 
-              className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest italic text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <Globe className="w-3 h-3" />
-              Accès Admin
-            </Link>
             <button 
               onClick={() => setShowSchoolLoginModal(true)}
               className="text-[10px] font-black text-gray-400 hover:text-blue-600 transition-colors px-2 md:px-4 py-2 uppercase tracking-widest italic flex items-center gap-2"
@@ -196,14 +189,6 @@ export const GlobalHome = () => {
               </div>
 
               <div className="mt-auto space-y-4">
-                <Link 
-                  to="/superadmincnx" 
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest italic text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  <Globe className="w-4 h-4" />
-                  Accès Admin
-                </Link>
                 <button 
                   onClick={() => { setShowSchoolLoginModal(true); setIsMenuOpen(false); }}
                   className="w-full px-6 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest italic text-xs hover:bg-black transition-all"

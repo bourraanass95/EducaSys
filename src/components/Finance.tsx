@@ -65,7 +65,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
   useEffect(() => {
     loadData();
     loadStudents();
-  }, []);
+  }, [user?.schoolId]);
 
   const openNewModal = () => {
     setEditingInvoice(null);
@@ -101,8 +101,9 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
   };
 
   const loadData = async () => {
+    const schoolId = user?.schoolId;
+    if (!schoolId) return;
     try {
-      const schoolId = user?.schoolId;
       const [invoiceData, statData] = await Promise.all([
         api.getInvoices(schoolId),
         api.getDashboardStats(schoolId)
@@ -117,6 +118,7 @@ export const Finance = ({ activeRole, user }: FinanceProps) => {
   };
 
   const loadStudents = async () => {
+    if (!user?.schoolId) return;
     try {
       const studentData = await api.getStudents(user?.schoolId);
       setStudents(dedupeById(studentData));
