@@ -13,6 +13,8 @@ import {
   Filter,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import { cn, dedupeById } from "../lib/utils";
 import { UserRole } from "../types";
 import { api } from "../services/api";
@@ -30,7 +32,7 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
   const [selectedYear, setSelectedYear] = useState("1");
 
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+  const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
@@ -283,8 +285,74 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
     return SUBJECT_COLORS[index];
   };
 
-  const handleDownloadSchedule = () => {
-    window.print();
+  const handleDownloadSchedule = async () => {
+    const element = document.getElementById("schedule-container");
+    if (!element) return;
+
+    // Temporarily adjust styles for cleaner capture
+    const originalStyle = element.style.cssText;
+    const scrollable = element.querySelector('.overflow-x-auto') as HTMLElement;
+    const originalScrollableStyle = scrollable ? scrollable.style.cssText : null;
+
+    element.style.overflow = "visible";
+    element.style.padding = "10px"; // Less padding
+    if (scrollable) {
+      scrollable.style.overflow = "visible";
+    }
+
+    try {
+      const dataUrl = await toPng(element, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "white",
+      });
+
+      // Restore original style
+      element.style.cssText = originalStyle;
+      if (scrollable && originalScrollableStyle !== null) {
+        scrollable.style.cssText = originalScrollableStyle;
+      }
+
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const pdf = new jsPDF("l", "mm", "a4");
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+
+        // Fit image within page margins
+        const margin = 10;
+        const availableW = pageW - margin * 2;
+        const availableH = pageH - margin * 2;
+
+        const imgRatio = img.width / img.height;
+        const pageRatio = availableW / availableH;
+
+        let imgWidth, imgHeight;
+
+        if (imgRatio > pageRatio) {
+          imgWidth = availableW;
+          imgHeight = availableW / imgRatio;
+        } else {
+          imgHeight = availableH;
+          imgWidth = availableH * imgRatio;
+        }
+
+        const x = margin + (availableW - imgWidth) / 2;
+        const y = margin + (availableH - imgHeight) / 2;
+
+        pdf.addImage(dataUrl, "PNG", x, y, imgWidth, imgHeight);
+        pdf.save(`emploi-du-temps-${selectedFiliere?.replace(/\s+/g, "-")}.pdf`);
+      };
+    } catch (e) {
+      console.error(e);
+      // Restore on error
+      element.style.cssText = originalStyle;
+      if (scrollable && originalScrollableStyle !== null) {
+        scrollable.style.cssText = originalScrollableStyle;
+      }
+      alert("Erreur lors de la génération du PDF");
+    }
   };
 
   return (
@@ -360,7 +428,7 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
       {selectedFiliere ? (
         <div
           id="schedule-container"
-          className="bg-white border border-gray-100 rounded-[32px] shadow-xl overflow-hidden print:overflow-visible print:shadow-none print:border-none p-6 relative print:p-0 print:m-0 print-full-page"
+          className="printable-area bg-white border border-gray-100 rounded-[32px] shadow-xl overflow-hidden print:overflow-visible print:shadow-none print:border-none p-6 relative print:p-0 print:m-0 print-full-page print-fit-page"
         >
           <div className="absolute top-0 left-0 w-full h-32 bg-blue-50/50 print:hidden" />
           <div className="relative z-10">
@@ -371,29 +439,29 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left border-collapse min-w-[800px] print:min-w-0">
+                <table className="w-full text-left border-collapse border border-gray-300 min-w-[800px] print:min-w-0">
                 <thead>
                   <tr>
-                    <th className="p-4 border-b-2 border-gray-100 bg-gray-50 uppercase text-[10px] font-black tracking-widest text-gray-400 w-32 text-center">
-                      Horaires
+                    <th className="p-2 border border-gray-300 bg-gray-200 uppercase text-[10px] font-black tracking-widest text-gray-700 w-32 text-center">
+                      Jours
                     </th>
-                    {days.map((day) => (
+                    {hours.map((hour) => (
                       <th
-                        key={day}
-                        className="p-4 border-b-2 border-gray-100 bg-gray-50 text-center uppercase text-[10px] font-black tracking-widest text-gray-700"
+                        key={hour}
+                        className="p-2 border border-gray-300 bg-gray-200 text-center uppercase text-[10px] font-black tracking-widest text-gray-700"
                       >
-                        {day}
+                        {`${hour.toString().padStart(2, "0")}:00`}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 text-sm">
-                  {hours.map((hour) => (
-                    <tr key={hour}>
-                      <td className="p-4 border-r border-gray-50 text-center text-xs font-bold text-gray-500 bg-gray-50/30 whitespace-nowrap">
-                        {`${hour.toString().padStart(2, "0")}:00 - ${(hour + 1).toString().padStart(2, "0")}:00`}
+                <tbody className="divide-y divide-gray-300 text-sm">
+                  {days.map((day) => (
+                    <tr key={day} className="h-10">
+                      <td className="p-1 border border-gray-300 text-center text-[10px] font-bold text-gray-600 bg-gray-50 whitespace-nowrap">
+                        {day}
                       </td>
-                      {days.map((day) => {
+                      {hours.map((hour) => {
                         const startingSession = activeSchedules.find(
                           (s) =>
                             s.day === day &&
@@ -410,9 +478,11 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
                             parseInt(s.endTime) > hour,
                         );
 
-                        if (isCovered) return null;
+                        if (isCovered) return (
+                          <td key={hour} className="p-0 border border-gray-300 bg-gray-50"></td>
+                        );
 
-                        const rowSpan =
+                        const colSpan =
                           startingSession && startingSession.endTime
                             ? Math.max(
                                 1,
@@ -428,114 +498,38 @@ export const Schedule = ({ activeRole, user }: ScheduleProps) => {
 
                         return (
                           <td
-                            key={day}
-                            rowSpan={rowSpan}
+                            key={hour}
+                            colSpan={colSpan}
                             className={cn(
-                              "p-2 border-r border-gray-50 min-w-[150px] align-top relative group",
+                              "p-0 border border-gray-300 align-top relative group h-10",
                               !session &&
-                                "bg-white hover:bg-gray-50/50 transition-colors h-32",
+                                "bg-white",
                             )}
                           >
                             {session && theme ? (
                               <div
                                 className={cn(
-                                  "w-full rounded-xl p-3 border flex flex-col hover:shadow-md transition-shadow",
+                                  "w-full h-full p-1 border flex flex-col justify-center overflow-hidden",
                                   theme.bg,
                                   theme.border,
                                 )}
-                                style={{
-                                  minHeight: `calc(${rowSpan * 8}rem - 1rem)`,
-                                }}
                               >
                                 <h4
                                   className={cn(
-                                    "font-bold text-xs mb-1 line-clamp-2 pr-6",
+                                    "font-bold text-[9px] truncate",
                                     theme.text,
                                   )}
                                 >
                                   {session.name}
                                 </h4>
-                                <div className="space-y-1 mt-auto pt-2">
-                                  <div
-                                    className={cn(
-                                      "flex items-center gap-1 text-[10px] font-medium",
-                                      theme.icon,
-                                    )}
-                                  >
-                                    <User className="w-3 h-3" />{" "}
-                                    {session.teacher}
-                                  </div>
-                                  <div
-                                    className={cn(
-                                      "flex items-center gap-1 text-[10px] font-medium",
-                                      theme.icon,
-                                    )}
-                                  >
-                                    <MapPin className="w-3 h-3" />{" "}
-                                    {session.room}
-                                  </div>
-                                  <div
-                                    className={cn(
-                                      "flex items-center gap-1 text-[10px] font-medium",
-                                      theme.icon,
-                                    )}
-                                  >
-                                    <Clock className="w-3 h-3" />{" "}
-                                    {session.startTime} - {session.endTime}
-                                  </div>
-                                </div>
-
-                                {canManage && (
-                                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white shadow-md p-1 rounded-lg print:hidden">
-                                    <button
-                                      onClick={() => {
-                                        setEditingSchedule(session);
-                                        setScheduleForm(session);
-                                        setIsModalOpen(true);
-                                      }}
-                                      className={cn(
-                                        "p-1 hover:bg-gray-50 rounded",
-                                        theme.icon,
-                                      )}
-                                    >
-                                      <Edit2 className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteSchedule(session.id)
-                                      }
-                                      className="p-1 hover:bg-red-50 rounded text-red-600"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                )}
+                                <p className={cn("text-[8px] truncate opacity-80", theme.text)}>
+                                  {session.teacher}
+                                </p>
+                                <p className={cn("text-[8px] truncate opacity-70", theme.text)}>
+                                  {session.room}
+                                </p>
                               </div>
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity min-h-[6rem]">
-                                {canManage && (
-                                  <button
-                                    onClick={() => {
-                                      setEditingSchedule(null);
-                                      setScheduleForm({
-                                        day,
-                                        startTime: `${hour.toString().padStart(2, "0")}:00`,
-                                        endTime: `${(hour + 1).toString().padStart(2, "0")}:00`,
-                                        name: "",
-                                        teacher: "",
-                                        room: "",
-                                        group: selectedFiliere,
-                                        year: selectedYear,
-                                      });
-                                      setIsModalOpen(true);
-                                    }}
-                                    className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                            ) : null}
                           </td>
                         );
                       })}

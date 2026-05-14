@@ -19,6 +19,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { UserRole } from "../types";
 import { api, StaffMember } from "../services/api";
 import Papa from "papaparse";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 
 const getDayOrder = (day: string) => {
   const normalized = String(day || "")
@@ -149,8 +151,58 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
     }
   };
 
-  const handleDownloadPlanning = () => {
-    window.print();
+  const handleDownloadPlanning = async () => {
+    const element = document.getElementById("teacher-planning-content");
+    if (!element) return;
+
+    // Temporarily remove overflow and limit constraints to ensure everything is captured
+    const originalStyle = element.style.cssText;
+    element.style.overflow = "visible";
+    element.style.maxHeight = "none";
+    element.style.height = "auto";
+
+    try {
+      const dataUrl = await toPng(element, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "white",
+      });
+
+      // Restore original style
+      element.style.cssText = originalStyle;
+
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const pdf = new jsPDF("p", "mm", "a4"); // "p" for portrait
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+
+        const imgRatio = img.width / img.height;
+        const pageRatio = pageW / pageH;
+
+        let imgWidth, imgHeight;
+
+        if (imgRatio > pageRatio) {
+          imgWidth = pageW;
+          imgHeight = pageW / imgRatio;
+        } else {
+          imgHeight = pageH;
+          imgWidth = pageH * imgRatio;
+        }
+
+        const x = (pageW - imgWidth) / 2;
+        const y = (pageH - imgHeight) / 2;
+
+        pdf.addImage(dataUrl, "PNG", x, y, imgWidth, imgHeight);
+        pdf.save(`planning-${selectedProfessor?.replace(/\s+/g, "-")}.pdf`);
+      };
+    } catch (e) {
+      console.error(e);
+      // Restore on error
+      element.style.cssText = originalStyle;
+      alert("Erreur lors de la génération du PDF");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -780,7 +832,7 @@ export const Teachers = ({ activeRole, user }: TeachersProps) => {
                     </p>
                   </div>
                 ) : teacherSchedule.length > 0 ? (
-                  <div id="teacher-planning-content" className="space-y-6 print-full-page">
+                  <div id="teacher-planning-content" className="printable-area space-y-6 print-full-page print-fit-page">
                     {/* Day Selector Navigation Pills */}
                     <div className="flex flex-wrap items-center gap-2 pb-4 border-b border-gray-100 print:hidden">
                       {[
